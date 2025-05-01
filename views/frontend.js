@@ -1,7 +1,48 @@
+// CREATE GAME
 async function createGame() {
-  //Sent POST request to the API to create a new game and send success message
+  const creatorName = document.getElementById('playerName').value; // Get the creator's name from input
+
+  if (!creatorName) {
+    console.log('Please enter your name to create a game');
+    return;  // Don't proceed if the player hasn't entered their name
+  }
+
+  try {
+    // Send a POST request to create a game, including the creator's name
+    const res = await fetch('/api/game/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ creatorName }) // Send the creator's name in the request body
+    });
+
+    if (res.ok) {
+      const data = await res.json(); // Parse the response to get the game code and creator's name
+      console.log('Game created! Game Code: ' + data.code); // Log the game code to the console
+      alert('Game created! Game Code: ' + data.code); // Display the game code to the user
+    } else {
+      throw new Error('Failed to create game');
+    }
+  } catch (e) {
+    console.log(e.message); 
+  }
 }
 
-async function joinGame() {
-//Insert a name and sent POST request to the server to join the game 
+
+// JOIN GAME
+async function joinGame () {
+  const name = document.getElementById('playerName').value
+  const gameCode = document.getElementById('gameCodeInput').value
+  const res = await fetch('/api/game/join', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, gameCode })
+  })
+  const data = await res.json()
+  if (res.ok) {
+    alert('Joined game!')
+    //getStatus()
+  } else {
+    throw new Error('Failed to create game')
+  }
 }
+
