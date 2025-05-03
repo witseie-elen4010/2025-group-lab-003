@@ -16,7 +16,12 @@ exports.createGame = (req, res) => {
 
 // Join Game
 exports.joinGame = (req, res) => {
-  // TODO: Implement join game logic
+  const { name, gameCode } = req.body;
+  if (!games[gameCode]) {
+    return res.status(400).json({ error: 'Game does not exist' });
+  }
+  games[gameCode].players.push({ name, role: 'player' });
+  res.json({ message: 'Joined game!' });
 }
 
 
