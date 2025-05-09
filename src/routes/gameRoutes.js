@@ -1,8 +1,5 @@
 const express = require('express');
-const path = require('path');
-
-// Import gameController from the backend folder
-const gameController = require('./backend/gameController');
+const gameController = require('../controllers/gameController');
 
 const router = express.Router();
 

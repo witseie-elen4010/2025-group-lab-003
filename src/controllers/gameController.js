@@ -1,4 +1,3 @@
-// THIS FILE IS FOR GAME LOGIC
 const games = {}; // This will store the games in memory
 
 // Create Game
@@ -23,6 +22,3 @@ exports.joinGame = (req, res) => {
   games[gameCode].players.push({ name, role: 'player' });
   res.json({ message: 'Joined game!' });
 }
-
-
-//module.exports = router
