@@ -1,24 +1,13 @@
-const games = {}; // This will store the games in memory
+const gameModel = require('../models/gameModels');
 
-// Create Game
-exports.createGame = (req, res) => {
-  const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const { creatorName } = req.body;
-  games[gameCode] = {
-    creatorName,
-    players: [{ name: creatorName, role: 'creator' }],
-    status: 'waiting', // waiting, in-progress, completed
-  };
-  res.json({ code: gameCode });
-};
-
-
-// Join Game
-exports.joinGame = (req, res) => {
-  const { name, gameCode } = req.body;
-  if (!games[gameCode]) {
-    return res.status(400).json({ error: 'Game does not exist' });
+exports.createGame = async (req, res) => {
+  try {
+    const gameCode = await gameModel.createGame();
+    // join the creator as the first player
+    console.log('Game created successfully', gameCode);
+    res.json({ message: 'Game created successfully', gameCode });
+  } catch (err) {
+    console.error('Error creating game', err);
+    res.status(500).json({ error: 'Error creating game' });
   }
-  games[gameCode].players.push({ name, role: 'player' });
-  res.json({ message: 'Joined game!' });
-}
+};

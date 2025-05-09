@@ -17,8 +17,8 @@ async function createGame() {
 
     if (res.ok) {
       const data = await res.json(); // Parse the response to get the game code and creator's name
-      console.log('Game created! Game Code: ' + data.code); // Log the game code to the console
-      alert('Game created! Game Code: ' + data.code); // Display the game code to the user
+      console.log('Game created! Game Code: ' + data.gameCode); // Log the game code to the console
+      alert('Game created! Game Code: ' + data.gameCode); // Display the game code to the user
     } else {
       throw new Error('Failed to create game');
     }
@@ -26,23 +26,3 @@ async function createGame() {
     console.log(e.message); 
   }
 }
-
-
-// JOIN GAME
-async function joinGame () {
-  const name = document.getElementById('playerName').value
-  const gameCode = document.getElementById('gameCodeInput').value
-  const res = await fetch('/api/game/join', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, gameCode })
-  })
-  const data = await res.json()
-  if (res.ok) {
-    alert('Joined game!')
-    //getStatus()
-  } else {
-    throw new Error('Failed to create game')
-  }
-}
-
