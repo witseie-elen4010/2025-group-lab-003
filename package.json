@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "- Andile Dlongwana\r - Okwukwe Mbajiorgu\r - Jaime Roberto Da Cruz Junior\r - Tumisho Mphela",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "jest", 
+    "coverage": "jest --coverage"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/witseie-elen4010/2025-group-lab-003.git"
@@ -18,5 +21,8 @@
     "dotenv": "^16.5.0",
     "express": "5.1.0",
     "mssql": "^11.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }
