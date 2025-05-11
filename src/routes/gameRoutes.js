@@ -4,7 +4,10 @@ const gameController = require('../controllers/gameController');
 const router = express.Router();
 
 router.post('/create', gameController.createGame);
-router.get('/players/:gameCode', gameController.getPlayers); 
+router.post('/join', gameController.joinGame);
+router.post('/start', gameController.startGame);
+router.get('/players/:gameCode', gameController.getPlayers);
+router.get('/player/:gameCode/:playerName', gameController.getPlayerWord); 
 
 module.exports = router;
 

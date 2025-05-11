@@ -19,6 +19,24 @@ exports.createGame = async (req, res) => {
   }
 };
 
+exports.joinGame = async (req, res) => {
+  const { name, gameCode } = req.body;
+
+  if (!name || !gameCode) {
+    return res.status(400).json({ error: 'Name and game code are required' });
+  }
+
+  try {
+    await gameModel.joinGame(name, gameCode);
+    console.log(`${name} joined game ${gameCode}`);
+    res.json({ message: 'Joined game successfully' });
+  } catch (err) {
+    console.error('Error joining game:', err);
+    res.status(500).json({ error: 'Failed to join game' });
+  }
+};
+
+
 exports.getPlayers = async (req, res) => {
   const gameCode = req.params.gameCode;
   console.log('Fetching players for game code:', gameCode);
@@ -31,4 +49,38 @@ exports.getPlayers = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch players' });
   }
 };
+
+exports.startGame = async (req, res) => {
+  const { gameCode } = req.body;
+
+  if (!gameCode) {
+    return res.status(400).json({ error: 'Game code is required' });
+  }
+
+  try {
+    await gameModel.assignRolesAndWords(gameCode); // Build on Developer A's start
+    console.log(`Game ${gameCode} started with roles assigned.`);
+    res.json({ message: 'Game started' });
+  } catch (err) {
+    console.error('Error starting game', err);
+    res.status(500).json({ error: 'Failed to start game' });
+  }
+};
+
+exports.getPlayerWord = async (req, res) => {
+  const { gameCode, playerName } = req.params;
+
+  try {
+    const player = await gameModel.getPlayerByNameAndGameCode(playerName, gameCode);
+    if (!player) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+
+    res.json({ word: player.word, role: player.role });
+  } catch (err) {
+    console.error('Error fetching player word/role:', err);
+    res.status(500).json({ error: 'Failed to fetch player data' });
+  }
+};
+
 
