@@ -41,3 +41,12 @@ exports.getPlayersByGameCode = async (gameCode) => {
     return result.recordset;
 };
   
+exports.startGame = async (gameCode) => {
+    const db = require('../config/db');
+    const pool = await db.poolPromise;
+  
+    await pool.request()
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .query(`UPDATE GameState SET gameStarted = 1 WHERE gameCode = @gameCode`);
+  };
+  

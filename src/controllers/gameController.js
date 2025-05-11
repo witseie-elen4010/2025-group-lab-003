@@ -50,3 +50,21 @@ exports.getPlayers = async (req, res) => {
   }
 };
 
+exports.startGame = async (req, res) => {
+  const { gameCode } = req.body;
+
+  if (!gameCode) {
+    return res.status(400).json({ error: 'Game code is required' });
+  }
+
+  try {
+    await gameModel.startGame(gameCode);
+    console.log(`Game ${gameCode} started`);
+    res.json({ message: 'Game started' });
+  } catch (err) {
+    console.error('Error starting game', err);
+    res.status(500).json({ error: 'Failed to start game' });
+  }
+};
+
+
