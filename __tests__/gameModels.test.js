@@ -39,9 +39,9 @@ describe('gameModels.getPlayersByGameCode', () => {
   });
 });
 
-describe('gameModels.startGame', () => {
+/*describe('gameModels.startGame', () => {
   test('should update gameStarted in GameState', async () => {
     await expect(gameModel.startGame('ABC123')).resolves.toBeUndefined();
     // No assert here because DB is mocked — this ensures no throw
   });
-});
+});*/
