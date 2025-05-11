@@ -6,7 +6,8 @@ const router = express.Router();
 router.post('/create', gameController.createGame);
 router.post('/join', gameController.joinGame);
 router.post('/start', gameController.startGame);
-router.get('/players/:gameCode', gameController.getPlayers); 
+router.get('/players/:gameCode', gameController.getPlayers);
+router.get('/player/:gameCode/:playerName', gameController.getPlayerWord); 
 
 module.exports = router;
 
