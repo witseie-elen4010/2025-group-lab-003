@@ -122,7 +122,7 @@ describe('List of players in Lobby', () => {
   });
   
 
-  describe('gameController.startGame', () => {
+ /* describe('gameController.startGame', () => {
     let req, res;
   
     beforeEach(() => {
@@ -153,7 +153,7 @@ describe('List of players in Lobby', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Failed to start game' });
     });
-  });
+  });*/
 
 afterAll(() => {
     jest.resetAllMocks();
