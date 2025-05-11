@@ -3,7 +3,7 @@ let gameCode = '';
 
 // CREATE GAME
 async function createGame() {
-  playerName = document.getElementById('playerName').value; // Get the creator's name from input
+  const playerName = document.getElementById('playerName').value; // Get the creator's name from input
 
   try {
     // Send a POST request to create a game, including the creator's name
@@ -37,8 +37,8 @@ async function createGame() {
 
 // JOIN GAME
 async function joinGame() {
-  playerName = document.getElementById('playerName').value;
-  gameCode = document.getElementById('gameCodeInput').value.toUpperCase();
+  const playerName = document.getElementById('playerName').value;
+  const gameCode = document.getElementById('gameCodeInput').value.toUpperCase();
 
   try {
     const res = await fetch('/api/game/join', {
@@ -78,9 +78,7 @@ async function startGame() {
 
     if (res.ok) {
       alert('Game started!');
-      console.log('Game Code: ' + gameCode);
-      console.log('Player Name: ' + playerName);
-      window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}`;
+      console.log('window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}`');
     } else {
       const errorData = await res.json();
       throw new Error(errorData.error || 'Failed to start game');
