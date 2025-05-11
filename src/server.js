@@ -16,11 +16,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
-// Game route
-app.get('/game.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'game.html'));
-});
-  
 // API routes
 const gameRoutes = require('./routes/gameRoutes');
 app.use('/api/game', gameRoutes);
