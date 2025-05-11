@@ -2,11 +2,6 @@
 async function createGame() {
   const creatorName = document.getElementById('playerName').value; // Get the creator's name from input
 
-  //if (!creatorName) {
-  //  console.log('Please enter your name to create a game');
-  //  return;  // Don't proceed if the player hasn't entered their name
-  //}
-
   try {
     // Send a POST request to create a game, including the creator's name
     const res = await fetch('/api/game/create', {
@@ -30,6 +25,37 @@ async function createGame() {
     errorDisplay.innerText = e.message;
     errorDisplay.classList.remove('d-none'); // Show the alert
     console.error('Game creation error:', e.message);
+    setTimeout(() => {
+      errorDisplay.classList.add('d-none');
+    }, 4000);
+  }
+}
+
+// JOIN GAME
+async function joinGame() {
+  const playerName = document.getElementById('playerName').value;
+  const gameCode = document.getElementById('gameCodeInput').value.toUpperCase();
+
+  try {
+    const res = await fetch('/api/game/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: playerName, gameCode })
+    });
+
+    if (res.ok) {
+      alert(`Joined game ${gameCode} successfully!`);
+      document.getElementById('lobbySection').classList.remove('d-none');
+      await loadLobby(gameCode);
+    } else {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Failed to join game');
+    }
+  } catch (err) {
+    const errorDisplay = document.getElementById('errorDisplay');
+    errorDisplay.innerText = err.message;
+    errorDisplay.classList.remove('d-none');
+    console.error('Join game error:', err.message);
     setTimeout(() => {
       errorDisplay.classList.add('d-none');
     }, 4000);

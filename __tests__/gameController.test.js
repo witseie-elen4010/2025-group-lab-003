@@ -45,6 +45,51 @@ describe('CreateGame and Join Game', () => {
   });
 });
 
+describe('gameController.joinGame', () => {
+    let req, res;
+  
+    beforeEach(() => {
+      req = {
+        body: {
+          name: 'Andile',
+          gameCode: 'ABC123'
+        }
+      };
+      res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+    });
+  
+    test('should return 400 if name or gameCode is missing', async () => {
+      req.body.name = '';
+      await gameController.joinGame(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Name and game code are required' });
+    });
+  
+    test('should join game and return 200', async () => {
+      gameModel.joinGame.mockResolvedValue();
+      await gameController.joinGame(req, res);
+      expect(gameModel.joinGame).toHaveBeenCalledWith('Andile', 'ABC123');
+      expect(res.json).toHaveBeenCalledWith({ message: 'Joined game successfully' });
+    });
+  
+    test('should return 500 if model throws error', async () => {
+      gameModel.joinGame.mockRejectedValue(new Error('DB error'));
+      
+      const originalError = console.error;
+      console.error = jest.fn(); // Suppress expected log
+  
+      await gameController.joinGame(req, res);
+  
+      console.error = originalError; // Restore
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to join game' });
+    });
+  });
+  
+
 describe('List of players in Lobby', () => {
     let req, res;
   

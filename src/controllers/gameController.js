@@ -19,6 +19,24 @@ exports.createGame = async (req, res) => {
   }
 };
 
+exports.joinGame = async (req, res) => {
+  const { name, gameCode } = req.body;
+
+  if (!name || !gameCode) {
+    return res.status(400).json({ error: 'Name and game code are required' });
+  }
+
+  try {
+    await gameModel.joinGame(name, gameCode);
+    console.log(`${name} joined game ${gameCode}`);
+    res.json({ message: 'Joined game successfully' });
+  } catch (err) {
+    console.error('Error joining game:', err);
+    res.status(500).json({ error: 'Failed to join game' });
+  }
+};
+
+
 exports.getPlayers = async (req, res) => {
   const gameCode = req.params.gameCode;
   console.log('Fetching players for game code:', gameCode);
