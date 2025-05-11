@@ -122,6 +122,39 @@ describe('List of players in Lobby', () => {
   });
   
 
+  describe('gameController.startGame', () => {
+    let req, res;
+  
+    beforeEach(() => {
+      req = { body: { gameCode: 'ABC123' } };
+      res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+    });
+  
+    test('should return 400 if no gameCode is provided', async () => {
+      req.body.gameCode = undefined;
+      await gameController.startGame(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Game code is required' });
+    });
+  
+    test('should return 200 if startGame succeeds', async () => {
+      gameModel.startGame.mockResolvedValue(); // pretend it worked
+      await gameController.startGame(req, res);
+      expect(gameModel.startGame).toHaveBeenCalledWith('ABC123');
+      expect(res.json).toHaveBeenCalledWith({ message: 'Game started' });
+    });
+  
+    test('should return 500 if startGame throws', async () => {
+      gameModel.startGame.mockRejectedValue(new Error('DB error'));
+      await gameController.startGame(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to start game' });
+    });
+  });
+
 afterAll(() => {
     jest.resetAllMocks();
 });
