@@ -94,7 +94,18 @@ exports.submitVote = async (req, res) => {
     const voterId = await gameModel.getPlayerIdByUserId(gameCode, voterName);
     const targetId = await gameModel.getPlayerIdByUserId(gameCode, votedFor);
     const round = await gameModel.getCurrentRound(gameCode);
+
     await gameModel.recordVote(gameCode, round, voterId, targetId);
+
+    const allVotesIn = await gameModel.haveAllPlayersVoted(gameCode, round);
+
+    if (allVotesIn) {
+      const io = req.app.get('io');
+      io.to(gameCode).emit('allVotesIn',  { message: 'All votes are in!' });
+      // TODO: Something to handle when all votes are in
+      console.log('All votes are in for round', round);
+    }
+
     res.json({ message: 'Vote recorded' });
   } catch (err) {
     console.error(err);

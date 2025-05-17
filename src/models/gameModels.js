@@ -158,4 +158,40 @@ exports.getPlayerIdByUserId = async (gameCode, userId) => {
   return result.recordset[0].id;
 }
 
-  
+// Check if all players have voted for given gameCode and round
+exports.haveAllPlayersVoted = async (gameCode, round) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  // Get count of active players in the game
+  const playerCountQuery = `
+    SELECT COUNT(*) AS playerCount
+    FROM Players
+    WHERE gameCode = @gameCode
+      AND status = 'active'   -- or whatever field indicates they are still in game
+  `;
+
+  const votesCountQuery = `
+    SELECT COUNT(DISTINCT voterId) AS votesCount
+    FROM Votes
+    WHERE gameCode = @gameCode AND round = @round
+  `;
+
+  // Run queries concurrently
+  const [playersResult, votesResult] = await Promise.all([
+    pool.request()
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .query(playerCountQuery),
+
+    pool.request()
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .input('round', db.sql.Int, round)
+      .query(votesCountQuery),
+  ]);
+
+  const playerCount = playersResult.recordset[0].playerCount;
+  const votesCount = votesResult.recordset[0].votesCount;
+
+  return votesCount >= playerCount; // true if all players voted
+};
+

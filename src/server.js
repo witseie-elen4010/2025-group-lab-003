@@ -33,7 +33,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // Store io instance on app so it can be accessed in routes/controllers
-// app.set('io', io);
+app.set('io', io);
 
 // Set up a Socket.IO connection handler
 io.on('connection', (socket) => {
