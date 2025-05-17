@@ -38,9 +38,6 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // Store io instance on app so it can be accessed in routes/controllers
-app.set('io', io);
-
-// Set up a Socket.IO connection handler
 io.on('connection', (socket) => {
   console.log('A user connected');
 
@@ -50,6 +47,16 @@ io.on('connection', (socket) => {
     io.to(gameCode).emit('playerJoined', playerName);
   });
 
+  // --- Chat handler ---
+  socket.on('joinRoom', (gameCode) => {
+    socket.join(gameCode);
+  });
+
+  socket.on('chatMessage', ({ gameCode, playerName, message }) => {
+    io.to(gameCode).emit('chatMessage', { playerName, message });
+  });
+
+  // --- End chat handler ---
   socket.on('startGame', (gameCode) => {
     console.log(`Game ${gameCode} started`);
     io.to(gameCode).emit('gameStarted');
@@ -59,6 +66,6 @@ io.on('connection', (socket) => {
     console.log('A user disconnected');
   });
 });
-
+  
 const port = process.env.PORT || 3000;
 server.listen(port, () => console.log('Server running on port', port));
