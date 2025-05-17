@@ -1,3 +1,6 @@
+const socket = io(); // Initialize socket.io client
+
+let creatorName = '';
 let playerName = '';
 let gameCode = '';
 
@@ -15,9 +18,14 @@ async function createGame() {
 
     if (res.ok) {
       const data = await res.json(); // Parse the response to get the game code and creator's name
+      creatorName = playerName;
       gameCode = data.gameCode; // Store the game code in a variable
       console.log('Game created! Game Code: ' + data.gameCode); // Log the game code to the console
       alert('Game created! Game Code: ' + data.gameCode); // Display the game code to the user
+      
+      // Tell backend we joined the game room
+      socket.emit('joinGame', gameCode, playerName);
+
       document.getElementById('lobbySection').classList.remove('d-none');
       await loadLobby(gameCode) // Load the lobby with the new game code
     } else {
@@ -50,6 +58,9 @@ async function joinGame() {
     if (res.ok) {
       alert(`Joined game ${gameCode} successfully!`);
       document.getElementById('lobbySection').classList.remove('d-none');
+      // Tell backend we joined the game room
+      socket.emit('joinGame', gameCode, playerName);
+
       await loadLobby(gameCode);
     } else {
       const errorData = await res.json();
@@ -80,7 +91,8 @@ async function startGame() {
       alert('Game started!');
       console.log('Game Code: ' + gameCode);
       console.log('Player Name: ' + playerName);
-      window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}`;
+
+      socket.emit('startGame', gameCode);
     } else {
       const errorData = await res.json();
       throw new Error(errorData.error || 'Failed to start game');
@@ -91,6 +103,23 @@ async function startGame() {
   }
 }
 
+// Listen for events from server
+socket.on('playerJoined', (joinedPlayerName) => {
+  console.log(`${joinedPlayerName} has joined the game`);
+  addPlayerToLobby(joinedPlayerName);
+});
+
+socket.on('gameStarted', () => {
+  alert('Game has started!');
+  window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}`;
+});
+
+function addPlayerToLobby(name) {
+  const playerList = document.getElementById('playerList');
+  const li = document.createElement('li');
+  li.textContent = name;
+  playerList.appendChild(li);
+}
 
 async function loadLobby(gameCode) {
   try {
@@ -107,7 +136,7 @@ async function loadLobby(gameCode) {
     });
 
     if (players.length >= 3) {
-      startBtn.classList.remove('d-none');
+        startBtn.classList.remove('d-none');
     } else {
       startBtn.classList.add('d-none');
     }
