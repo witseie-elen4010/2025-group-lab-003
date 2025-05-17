@@ -2,6 +2,9 @@
 const express = require('express');
 const path = require('path');
 
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
 
 // Middleware
@@ -25,5 +28,32 @@ app.get('/game.html', (req, res) => {
 const gameRoutes = require('./routes/gameRoutes');
 app.use('/api/game', gameRoutes);
 
+// Create HTTP server and attach Socket.IO
+const server = http.createServer(app);
+const io = new Server(server);
+
+// Store io instance on app so it can be accessed in routes/controllers
+// app.set('io', io);
+
+// Set up a Socket.IO connection handler
+io.on('connection', (socket) => {
+  console.log('A user connected');
+
+  socket.on('joinGame', (gameCode, playerName) => {
+    console.log(`${playerName} joined game: ${gameCode}`);
+    socket.join(gameCode);
+    io.to(gameCode).emit('playerJoined', playerName);
+  });
+
+  socket.on('startGame', (gameCode) => {
+    console.log(`Game ${gameCode} started`);
+    io.to(gameCode).emit('gameStarted');
+  });
+
+  socket.on('disconnect', () => {
+    console.log('A user disconnected');
+  });
+});
+
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log('Server running on port', port));
+server.listen(port, () => console.log('Server running on port', port));
