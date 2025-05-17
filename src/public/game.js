@@ -1,3 +1,8 @@
+// Assume you have playerName and gameCode available, for example from URL params:
+const urlParams = new URLSearchParams(window.location.search);
+const gameCode = urlParams.get('gameCode');
+const playerName = urlParams.get('playerName');
+
 // public/game.js
 window.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
@@ -20,3 +25,66 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   });
   
+async function startVote() {
+  try {
+    // Fetch players for this game
+    const res = await fetch(`/api/game/players/${gameCode}`);
+    if (!res.ok) throw new Error('Failed to fetch players');
+    const players = await res.json();
+
+    // Get votingList container
+    const votingList = document.getElementById('votingList');
+    votingList.innerHTML = ''; // Clear current contents (removes startVoteBtn)
+
+    // Add a heading
+    const heading = document.createElement('h5');
+    heading.innerText = 'Vote a player out:';
+    votingList.appendChild(heading);
+
+    // For each player except self, create a button
+    players.forEach(player => {
+      if (player.userId === playerName) return; // skip voting self
+
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-outline-danger m-1';
+      btn.innerText = `Vote ${player.userId}`;
+      // For now, just log the clicked player
+      btn.onclick = () => {
+        const confirmed = confirm(`Are you sure you want to vote for ${player.userId}?`);
+        if (confirmed) {
+          submitVote(player.userId);
+        }
+      };
+
+      votingList.appendChild(btn);
+    });
+  } catch (err) {
+    alert('Error loading players for voting');
+    console.error(err);
+  }
+}
+
+async function submitVote(votedPlayer) {
+  try {
+    const response = await fetch('/api/game/vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gameCode,     // from URL param
+        voterName: playerName,  // from URL param
+        votedFor: votedPlayer
+      })
+    });
+
+    if (response.ok) {
+      alert(`Your vote for ${votedPlayer} has been recorded.`);
+      document.getElementById('votingList').innerHTML = '<p>Thank you for voting!</p>';
+    } else {
+      const errorData = await response.json();
+      alert(`Failed to submit vote: ${errorData.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    alert('Error submitting vote. Please try again.');
+    console.error(error);
+  }
+}

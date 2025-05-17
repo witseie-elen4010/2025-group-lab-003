@@ -83,4 +83,25 @@ exports.getPlayerWord = async (req, res) => {
   }
 };
 
+exports.submitVote = async (req, res) => {
+  const { gameCode, voterName, votedFor } = req.body;
+
+  if (!gameCode || !voterName || !votedFor) {
+    return res.status(400).json({ error: 'Missing voting data' });
+  }
+
+  try {
+    const voterId = await gameModel.getPlayerIdByUserId(gameCode, voterName);
+    const targetId = await gameModel.getPlayerIdByUserId(gameCode, votedFor);
+    const round = await gameModel.getCurrentRound(gameCode);
+    await gameModel.recordVote(gameCode, round, voterId, targetId);
+    res.json({ message: 'Vote recorded' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Failed to record vote' });
+  }
+};
+
+
+
 
