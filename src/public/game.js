@@ -15,6 +15,16 @@ socket.on('allVotesIn', (data) => {
   // TODO: call eliminatePlayer() or update UI accordingly
 });
 
+socket.on('playerEliminated', (data) => {
+  if (data.eliminatedPlayer === playerName) {
+    alert('You have been eliminated!');
+    window.location.href = `/eliminated.html?gameCode=${gameCode}&playerName=${playerName}`;
+  } else {
+    alert(`Player eliminated: ${data.eliminatedPlayer}`);
+    // update lobby UI if desired
+  }
+});
+
 // public/game.js
 window.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);

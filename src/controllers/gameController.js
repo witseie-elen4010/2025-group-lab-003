@@ -103,6 +103,13 @@ exports.submitVote = async (req, res) => {
       const io = req.app.get('io');
       io.to(gameCode).emit('allVotesIn',  { message: 'All votes are in!' });
       // TODO: Something to handle when all votes are in
+      // Call elimination logic right here
+      try {
+        const eliminatedUserId = await eliminatePlayer(gameCode, round, io);
+        console.log(`Player eliminated: ${eliminatedUserId}`);
+      } catch (elimErr) {
+        console.error('Error during elimination:', elimErr);
+      }
       console.log('All votes are in for round', round);
     }
 
@@ -113,6 +120,36 @@ exports.submitVote = async (req, res) => {
   }
 };
 
+async function eliminatePlayer(gameCode, round, io) {
+  // Get vote counts for the round
+  const voteCounts = await gameModel.getVoteCounts(gameCode, round);
+  if (voteCounts.length === 0) {
+    throw new Error('No votes found to eliminate');
+  }
+
+  // Player with highest votes is first
+  const eliminatedPlayerId = voteCounts[0].targetId;
+
+  // Mark player eliminated
+  await gameModel.eliminatePlayerById(eliminatedPlayerId);
+
+  // Optionally increment round
+  //await gameModel.incrementRound(gameCode);
+
+  // Get eliminated player's userId
+  const eliminatedPlayer = await gameModel.getPlayerById(eliminatedPlayerId);
+
+  // Fetch updated players list to send in update
+  const updatedPlayers = await gameModel.getPlayersByGameCode(gameCode);
+  
+  // Emit elimination event to all clients in the room
+  io.to(gameCode).emit('playerEliminated', {
+    eliminatedPlayer: eliminatedPlayer.userId,
+    players: updatedPlayers
+  });
+
+  return eliminatedPlayer.userId;
+}
 
 
 

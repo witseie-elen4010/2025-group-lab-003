@@ -24,6 +24,11 @@ app.get('/game.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'game.html'));
 });
   
+// Elimination route
+app.get('/eliminated.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'eliminated.html'));
+});
+
 // API routes
 const gameRoutes = require('./routes/gameRoutes');
 app.use('/api/game', gameRoutes);
