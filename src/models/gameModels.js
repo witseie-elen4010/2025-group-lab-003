@@ -99,4 +99,63 @@ exports.getPlayerByNameAndGameCode = async (name, gameCode) => {
     return result.recordset[0];
 };
   
+exports.recordVote = async (gameCode, round, voterId, targetId) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  // First, check if voterId and targetId are integers
+  if (typeof voterId !== 'number' || typeof targetId !== 'number') {
+    throw new Error('voterId and targetId must be integer Player IDs');
+  }
+
+  const existingVote = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('round', db.sql.Int, round)
+    .input('voterId', db.sql.Int, voterId)          
+    .query(`SELECT COUNT(*) AS count FROM Votes 
+            WHERE gameCode = @gameCode AND round = @round AND voterId = @voterId`);
+
+  if (existingVote.recordset[0].count > 0) {
+    throw new Error('Player has already voted this round');
+  }
+
+  // Insert the vote record
+  const insertQuery = `
+    INSERT INTO Votes (gameCode, round, voterId, targetId)
+    VALUES (@gameCode, @round, @voterId, @targetId)
+  `;
+
+  await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('round', db.sql.Int, round)
+    .input('voterId', db.sql.Int, voterId)         
+    .input('targetId', db.sql.Int, targetId)       
+    .query(insertQuery);
+};
+
+exports.getCurrentRound = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT round FROM GameState WHERE gameCode = @gameCode`);
+
+  if (result.recordset.length === 0) throw new Error('Game not found');
+
+  return result.recordset[0].round;
+};
+
+exports.getPlayerIdByUserId = async (gameCode, userId) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+  
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('userId', db.sql.VarChar, userId)
+    .query('SELECT id FROM Players WHERE gameCode = @gameCode AND userId = @userId');
+  if (result.recordset.length === 0) throw new Error('Player not found');
+  return result.recordset[0].id;
+}
+
   

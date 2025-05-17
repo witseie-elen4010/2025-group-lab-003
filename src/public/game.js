@@ -50,11 +50,11 @@ async function startVote() {
       btn.innerText = `Vote ${player.userId}`;
       // For now, just log the clicked player
       btn.onclick = () => {
-    const confirmed = confirm(`Are you sure you want to vote for ${player.userId}?`);
-    if (confirmed) {
-      alert(`You confirmed voting for ${player.userId}`);
-    }
-  };
+        const confirmed = confirm(`Are you sure you want to vote for ${player.userId}?`);
+        if (confirmed) {
+          submitVote(player.userId);
+        }
+      };
 
       votingList.appendChild(btn);
     });
@@ -64,3 +64,27 @@ async function startVote() {
   }
 }
 
+async function submitVote(votedPlayer) {
+  try {
+    const response = await fetch('/api/game/vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gameCode,     // from URL param
+        voterName: playerName,  // from URL param
+        votedFor: votedPlayer
+      })
+    });
+
+    if (response.ok) {
+      alert(`Your vote for ${votedPlayer} has been recorded.`);
+      document.getElementById('votingList').innerHTML = '<p>Thank you for voting!</p>';
+    } else {
+      const errorData = await response.json();
+      alert(`Failed to submit vote: ${errorData.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    alert('Error submitting vote. Please try again.');
+    console.error(error);
+  }
+}
