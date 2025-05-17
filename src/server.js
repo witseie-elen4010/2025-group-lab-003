@@ -24,6 +24,11 @@ app.get('/game.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'game.html'));
 });
   
+// Elimination route
+app.get('/eliminated.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'eliminated.html'));
+});
+
 // API routes
 const gameRoutes = require('./routes/gameRoutes');
 app.use('/api/game', gameRoutes);
@@ -33,7 +38,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // Store io instance on app so it can be accessed in routes/controllers
-// app.set('io', io);
+app.set('io', io);
 
 // Set up a Socket.IO connection handler
 io.on('connection', (socket) => {

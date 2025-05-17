@@ -158,4 +158,93 @@ exports.getPlayerIdByUserId = async (gameCode, userId) => {
   return result.recordset[0].id;
 }
 
-  
+// Check if all players have voted for given gameCode and round
+exports.haveAllPlayersVoted = async (gameCode, round) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  // Get count of active players in the game
+  const playerCountQuery = `
+    SELECT COUNT(*) AS playerCount
+    FROM Players
+    WHERE gameCode = @gameCode
+      AND status = 'active'   -- or whatever field indicates they are still in game
+  `;
+
+  const votesCountQuery = `
+    SELECT COUNT(DISTINCT voterId) AS votesCount
+    FROM Votes
+    WHERE gameCode = @gameCode AND round = @round
+  `;
+
+  // Run queries concurrently
+  const [playersResult, votesResult] = await Promise.all([
+    pool.request()
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .query(playerCountQuery),
+
+    pool.request()
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .input('round', db.sql.Int, round)
+      .query(votesCountQuery),
+  ]);
+
+  const playerCount = playersResult.recordset[0].playerCount;
+  const votesCount = votesResult.recordset[0].votesCount;
+
+  return votesCount >= playerCount; // true if all players voted
+};
+
+// Get the vote counts for a given game and round
+exports.getVoteCounts = async (gameCode, round) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  const query = `
+    SELECT targetId, COUNT(*) AS votesReceived
+    FROM Votes
+    WHERE gameCode = @gameCode AND round = @round
+    GROUP BY targetId
+    ORDER BY votesReceived DESC
+  `;
+
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('round', db.sql.Int, round)
+    .query(query);
+
+  return result.recordset;
+};
+
+// Mark player as eliminated by playerId
+exports.eliminatePlayerById = async (playerId) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  await pool.request()
+    .input('playerId', db.sql.Int, playerId)
+    .query(`UPDATE Players SET status = 'eliminated' WHERE id = @playerId`);
+};
+
+// Get player details by id
+exports.getPlayerById = async (playerId) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  const result = await pool.request()
+    .input('playerId', db.sql.Int, playerId)
+    .query(`SELECT userId, status FROM Players WHERE id = @playerId`);
+
+  if (result.recordset.length === 0) throw new Error('Player not found');
+  return result.recordset[0];
+};
+
+/*
+exports.incrementRound = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`UPDATE GameState SET round = round + 1 WHERE gameCode = @gameCode`);
+};*/

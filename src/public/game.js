@@ -3,6 +3,28 @@ const urlParams = new URLSearchParams(window.location.search);
 const gameCode = urlParams.get('gameCode');
 const playerName = urlParams.get('playerName');
 
+const socket = io();
+
+// Join the Socket.IO room for this game so you receive room events
+socket.emit('joinGame', gameCode, playerName);
+
+// Listen for 'allVotesIn' event from server
+socket.on('allVotesIn', (data) => {
+  console.log('All votes are in:', data);
+  alert(data.message || 'All players have voted!');
+  // TODO: call eliminatePlayer() or update UI accordingly
+});
+
+socket.on('playerEliminated', (data) => {
+  if (data.eliminatedPlayer === playerName) {
+    alert('You have been eliminated!');
+    window.location.href = `/eliminated.html?gameCode=${gameCode}&playerName=${playerName}`;
+  } else {
+    alert(`Player eliminated: ${data.eliminatedPlayer}`);
+    // update lobby UI if desired
+  }
+});
+
 // public/game.js
 window.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
