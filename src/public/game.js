@@ -25,6 +25,24 @@ socket.on('playerEliminated', (data) => {
   }
 });
 
+// When game ends
+socket.on('gameEnded', (data) => {
+  alert(`Game over! Winner: ${data.winner}`);
+  // Redirect players to winner/loser pages (as you already implemented)
+  if (playerName === data.winner) {
+    //window.location.href = `/winner.html?gameCode=${gameCode}&playerName=${playerName}&winnerSide=${data.winner}`;
+  } else {
+    //window.location.href = `/loser.html?gameCode=${gameCode}&playerName=${playerName}&winnerSide=${data.winner}`;
+  }
+});
+
+// When new round starts
+socket.on('newRoundStarted', (data) => {
+  alert(`Round ${data.round} started! Your word has been updated.`);
+  // Reload game.html for new round (preserves playerName and gameCode)
+  window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}`;
+});
+
 // public/game.js
 window.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);

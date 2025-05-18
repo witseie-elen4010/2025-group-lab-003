@@ -239,7 +239,7 @@ exports.getPlayerById = async (playerId) => {
   return result.recordset[0];
 };
 
-/*
+
 exports.incrementRound = async (gameCode) => {
   const db = require('../config/db');
   const pool = await db.poolPromise;
@@ -247,4 +247,48 @@ exports.incrementRound = async (gameCode) => {
   await pool.request()
     .input('gameCode', db.sql.VarChar, gameCode)
     .query(`UPDATE GameState SET round = round + 1 WHERE gameCode = @gameCode`);
-};*/
+};
+
+exports.assignNewWords = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  // Define new words for roles (can randomize later)
+  const wordSet = {
+    undercover: 'Cherry',  // example new word
+    civilian: 'Grape'
+  };
+
+  const playersResult = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT userId, role FROM Players WHERE gameCode = @gameCode AND status = 'active'`);
+
+  const players = playersResult.recordset;
+
+  // Update word only for each player, keep roles unchanged
+  for (const player of players) {
+    const newWord = wordSet[player.role] || 'Unknown';
+    await pool.request()
+      .input('userId', db.sql.VarChar, player.userId)
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .input('word', db.sql.VarChar, newWord)
+      .query(`
+        UPDATE Players
+        SET word = @word
+        WHERE userId = @userId AND gameCode = @gameCode
+      `);
+  }
+};
+
+// Get player details by id including role
+exports.getPlayerRoleById = async (playerId) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  const result = await pool.request()
+    .input('playerId', db.sql.Int, playerId)
+    .query(`SELECT userId, role, status FROM Players WHERE id = @playerId`);
+
+  if (result.recordset.length === 0) throw new Error('Player not found');
+  return result.recordset[0];  // Returns userId, role, status
+};
