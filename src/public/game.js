@@ -2,6 +2,7 @@
 const urlParams = new URLSearchParams(window.location.search);
 const gameCode = urlParams.get('gameCode');
 const playerName = urlParams.get('playerName');
+let playerRole = null; // Initialize playerRole
 
 const socket = io();
 
@@ -18,7 +19,9 @@ socket.on('allVotesIn', (data) => {
 socket.on('playerEliminated', (data) => {
   if (data.eliminatedPlayer === playerName) {
     alert('You have been eliminated!');
-    window.location.href = `/eliminated.html?gameCode=${gameCode}&playerName=${playerName}`;
+    if(playerRole !== 'undercover') {
+      window.location.href = `/eliminated.html?gameCode=${gameCode}&playerName=${playerName}`;
+    }
   } else {
     alert(`Player eliminated: ${data.eliminatedPlayer}`);
     // update lobby UI if desired
@@ -27,12 +30,12 @@ socket.on('playerEliminated', (data) => {
 
 // When game ends
 socket.on('gameEnded', (data) => {
-  alert(`Game over! Winner: ${data.winner}`);
+  alert(`Game over! Winner: ${data.winner}s`);
   // Redirect players to winner/loser pages (as you already implemented)
-  if (playerName === data.winner) {
-    //window.location.href = `/winner.html?gameCode=${gameCode}&playerName=${playerName}&winnerSide=${data.winner}`;
+  if (playerRole === data.winner) {
+    window.location.href = `/winner.html?gameCode=${gameCode}&playerName=${playerName}&winnerSide=${data.winner}`;
   } else {
-    //window.location.href = `/loser.html?gameCode=${gameCode}&playerName=${playerName}&winnerSide=${data.winner}`;
+    window.location.href = `/loser.html?gameCode=${gameCode}&playerName=${playerName}&winnerSide=${data.winner}`;
   }
 });
 
@@ -55,6 +58,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   
       if (res.ok) {
         // Only show the player's word — omit role
+        playerRole = data.role;
         document.getElementById('playerWord').textContent = data.word;
       } else {
         document.getElementById('playerWord').textContent = data.error || 'Could not load your word.';

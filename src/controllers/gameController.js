@@ -147,10 +147,11 @@ async function eliminatePlayer(gameCode, round, io) {
     players: updatedPlayers
   });
 
-  if (eliminatedPlayerRole === 'undercover') {
+  console.log(`Player ${eliminatedPlayer.userId} eliminated. Role: ${eliminatedPlayerRole.role}`);
+  if (eliminatedPlayerRole.role === 'undercover') {
     // Impostor eliminated → Game ends, civilians win
-    await gameModel.endGame(gameCode, 'Civilians');
-    io.to(gameCode).emit('gameEnded', { winner: 'Civilians' });
+    await gameModel.endGame(gameCode, 'civilian');
+    io.to(gameCode).emit('gameEnded', { winner: 'civilian' });
   } else {
     // Civilian eliminated → Start next round
     await gameModel.incrementRound(gameCode);

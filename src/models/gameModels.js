@@ -280,15 +280,26 @@ exports.assignNewWords = async (gameCode) => {
   }
 };
 
-// Get player details by id including role
 exports.getPlayerRoleById = async (playerId) => {
   const db = require('../config/db');
   const pool = await db.poolPromise;
 
   const result = await pool.request()
     .input('playerId', db.sql.Int, playerId)
-    .query(`SELECT userId, role, status FROM Players WHERE id = @playerId`);
+    .query(`SELECT userId, role FROM Players WHERE id = @playerId`);
 
   if (result.recordset.length === 0) throw new Error('Player not found');
-  return result.recordset[0];  // Returns userId, role, status
+  return result.recordset[0];  // { userId, role }
 };
+
+exports.endGame = async (gameCode, winnerSide) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  // Update the winner column in GameState for the given gameCode
+  await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('winner', db.sql.VarChar, winnerSide)
+    .query(`UPDATE GameState SET winner = @winner, gameStarted = 0 WHERE gameCode = @gameCode`);
+};
+
