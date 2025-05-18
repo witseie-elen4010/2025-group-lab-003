@@ -1,3 +1,30 @@
+// Redirect to login if no auth token
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const now = Math.floor(Date.now() / 1000);
+    console.log('Token exp:', payload.exp, 'Current time:', now);
+    return payload.exp < now;
+  } catch {
+    return true;
+  }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const path = window.location.pathname;
+  const token = sessionStorage.getItem('token');
+
+  // Run token check ONLY on protected pages, not on login or signup
+  if ((path === '/' || path === '/index.html') && (!token || isTokenExpired(token))) {
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    window.location.href = '/login.html';
+  }
+});
+
+
 const socket = io(); // Initialize socket.io client
 
 let creatorName = '';
