@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/witseie-elen4010/2025-group-lab-003#readme",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "dotenv": "^16.5.0",
     "express": "5.1.0",
     "mssql": "^11.0.1",

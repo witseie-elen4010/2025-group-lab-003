@@ -1,7 +1,6 @@
 'use strict';
 const express = require('express');
 const path = require('path');
-const gameModel = require('./models/gameModels');
 
 const http = require('http');
 const { Server } = require('socket.io');
@@ -24,23 +23,16 @@ app.get('/', (req, res) => {
 app.get('/game.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'game.html'));
 });
+
+// Login and Sign Up routes
+app.get('/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'login.html'));
+});
+
+app.get('/signup.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'signup.html'));
+});
   
-// Elimination route
-app.get('/eliminated.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'eliminated.html'));
-});
-
-// Winner route
-app.get('/winner.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'winner.html'));
-});
-
-// Loser route
-app.get('/loser.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'loser.html'));
-});
-
-
 // API routes
 const gameRoutes = require('./routes/gameRoutes');
 app.use('/api/game', gameRoutes);
@@ -49,9 +41,14 @@ app.use('/api/game', gameRoutes);
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.set('io', io);
-
 // Store io instance on app so it can be accessed in routes/controllers
+// app.set('io', io);
+
+//login routes
+const userRoutes = require('./routes/userRoutes');
+app.use('/api/user', userRoutes);
+
+// Set up a Socket.IO connection handler
 io.on('connection', (socket) => {
   console.log('A user connected');
 
@@ -98,6 +95,7 @@ io.on('connection', (socket) => {
     console.log('A user disconnected');
   });
 });
-  
+
 const port = process.env.PORT || 3000;
 server.listen(port, () => console.log('Server running on port', port));
+

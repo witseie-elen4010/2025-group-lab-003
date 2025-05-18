@@ -328,3 +328,32 @@ exports.getGameMode = async (gameCode) => {
     if (result.recordset.length === 0) throw new Error('Game not found');
     return result.recordset[0].mode;
 };
+
+// Insert a new user into Users table
+exports.createUser = async (name, email, passwordHash) => {
+  const db = require('../config/db'); 
+  const pool = await db.poolPromise;
+  const query = `
+    INSERT INTO Users (name, email, password_hash)
+    VALUES (@name, @email, @passwordHash)
+  `;
+
+  await pool.request()
+    .input('name', db.sql.NVarChar, name)
+    .input('email', db.sql.NVarChar, email)
+    .input('passwordHash', db.sql.NVarChar, passwordHash)
+    .query(query);
+};
+
+// Find a user by email
+exports.getUserByEmail = async (email) => {
+  const db = require('../config/db'); 
+  const pool = await db.poolPromise;
+  const query = `SELECT * FROM Users WHERE email = @email`;
+
+  const result = await pool.request()
+    .input('email', db.sql.NVarChar, email)
+    .query(query);
+
+  return result.recordset[0]; // return user object or undefined
+}; 
