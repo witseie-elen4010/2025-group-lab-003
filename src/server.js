@@ -37,6 +37,8 @@ app.use('/api/game', gameRoutes);
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.set('io', io);
+
 // Store io instance on app so it can be accessed in routes/controllers
 io.on('connection', (socket) => {
   console.log('A user connected');
