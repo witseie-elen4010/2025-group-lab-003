@@ -52,7 +52,16 @@ io.on('connection', (socket) => {
     socket.join(gameCode);
   });
 
-  socket.on('chatMessage', ({ gameCode, playerName, message }) => {
+  socket.on('chatMessage', async ({ gameCode, playerName, message }) => {
+    // Get current round from DB(NEED TO IMPLEMENT)
+    // For now, we'll just assume round 1
+    let round = 1;
+    try {
+      round = await gameModel.getCurrentRound(gameCode);
+      await gameModel.saveChatMessage(gameCode, round, playerName, message);
+    } catch (err) {
+      console.error('Failed to save chat message:', err);
+    }
     io.to(gameCode).emit('chatMessage', { playerName, message });
   });
 
