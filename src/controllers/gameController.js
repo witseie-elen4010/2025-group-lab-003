@@ -133,8 +133,7 @@ async function eliminatePlayer(gameCode, round, io) {
   // Mark player eliminated
   await gameModel.eliminatePlayerById(eliminatedPlayerId);
 
-  // Optionally increment round
-  //await gameModel.incrementRound(gameCode);
+  const eliminatedPlayerRole = await gameModel.getPlayerRoleById(eliminatedPlayerId);
 
   // Get eliminated player's userId
   const eliminatedPlayer = await gameModel.getPlayerById(eliminatedPlayerId);
@@ -147,6 +146,22 @@ async function eliminatePlayer(gameCode, round, io) {
     eliminatedPlayer: eliminatedPlayer.userId,
     players: updatedPlayers
   });
+
+  console.log(`Player ${eliminatedPlayer.userId} eliminated. Role: ${eliminatedPlayerRole.role}`);
+  if (eliminatedPlayerRole.role === 'undercover') {
+    // Impostor eliminated → Game ends, civilians win
+    await gameModel.endGame(gameCode, 'civilian');
+    io.to(gameCode).emit('gameEnded', { winner: 'civilian' });
+  } else {
+    // Civilian eliminated → Start next round
+    await gameModel.incrementRound(gameCode);
+    await gameModel.assignNewWords(gameCode);
+
+    const currentRound = await gameModel.getCurrentRound(gameCode);
+
+    // Notify players to reload the game page with new round info
+    io.to(gameCode).emit('newRoundStarted', { round: currentRound });
+  }
 
   return eliminatedPlayer.userId;
 }
