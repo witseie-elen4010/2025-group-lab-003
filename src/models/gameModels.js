@@ -303,3 +303,17 @@ exports.endGame = async (gameCode, winnerSide) => {
     .query(`UPDATE GameState SET winner = @winner, gameStarted = 0 WHERE gameCode = @gameCode`);
 };
 
+
+exports.saveChatMessage = async (gameCode, round, playerName, message) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+  await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('round', db.sql.Int, round)
+    .input('playerName', db.sql.VarChar, playerName)
+    .input('message', db.sql.NVarChar, message)
+    .query(`
+      INSERT INTO ChatMessages (gameCode, round, playerName, message)
+      VALUES (@gameCode, @round, @playerName, @message)
+    `);
+};

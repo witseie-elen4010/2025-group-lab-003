@@ -9,6 +9,9 @@ const socket = io();
 // Join the Socket.IO room for this game so you receive room events
 socket.emit('joinGame', gameCode, playerName);
 
+// Join the chat room
+socket.emit('joinRoom', gameCode);
+
 // Listen for 'allVotesIn' event from server
 socket.on('allVotesIn', (data) => {
   console.log('All votes are in:', data);
@@ -132,3 +135,27 @@ async function submitVote(votedPlayer) {
     console.error(error);
   }
 }
+
+// Listen for chat messages from server
+socket.on('chatMessage', ({ playerName, message }) => {
+  const chatBox = document.getElementById('chatBox');
+  const msgDiv = document.createElement('div');
+  msgDiv.innerHTML = `<strong>${playerName}:</strong> ${message}`;
+  chatBox.appendChild(msgDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
+
+// Send chat message when button is clicked
+function sendChat() {
+  const chatInput = document.getElementById('chatInput');
+  const message = chatInput.value.trim();
+  if (message) {
+    socket.emit('chatMessage', { gameCode, playerName, message });
+    chatInput.value = '';
+  }
+}
+
+// Send message on Enter key
+document.getElementById('chatInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') sendChat();
+});

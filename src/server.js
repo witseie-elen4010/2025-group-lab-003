@@ -1,6 +1,7 @@
 'use strict';
 const express = require('express');
 const path = require('path');
+const gameModel = require('./models/gameModels');
 
 const http = require('http');
 const { Server } = require('socket.io');
@@ -48,10 +49,9 @@ app.use('/api/game', gameRoutes);
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Store io instance on app so it can be accessed in routes/controllers
 app.set('io', io);
 
-// Set up a Socket.IO connection handler
+// Store io instance on app so it can be accessed in routes/controllers
 io.on('connection', (socket) => {
   console.log('A user connected');
 
@@ -61,6 +61,25 @@ io.on('connection', (socket) => {
     io.to(gameCode).emit('playerJoined', playerName);
   });
 
+  // --- Chat handler ---
+  socket.on('joinRoom', (gameCode) => {
+    socket.join(gameCode);
+  });
+
+  socket.on('chatMessage', async ({ gameCode, playerName, message }) => {
+    // Get current round from DB(NEED TO IMPLEMENT)
+    // For now, we'll just assume round 1
+    let round = 1;
+    try {
+      round = await gameModel.getCurrentRound(gameCode);
+      await gameModel.saveChatMessage(gameCode, round, playerName, message);
+    } catch (err) {
+      console.error('Failed to save chat message:', err);
+    }
+    io.to(gameCode).emit('chatMessage', { playerName, message });
+  });
+
+  // --- End chat handler ---
   socket.on('startGame', (gameCode) => {
     console.log(`Game ${gameCode} started`);
     io.to(gameCode).emit('gameStarted');
@@ -70,6 +89,6 @@ io.on('connection', (socket) => {
     console.log('A user disconnected');
   });
 });
-
+  
 const port = process.env.PORT || 3000;
 server.listen(port, () => console.log('Server running on port', port));
