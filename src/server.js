@@ -58,6 +58,34 @@ io.on('connection', (socket) => {
     io.to(gameCode).emit('playerJoined', playerName);
   });
 
+  // --- Chat handler ---
+  socket.on('joinRoom', (gameCode) => {
+    socket.join(gameCode);
+  });
+
+  socket.on('chatMessage', async ({ gameCode, playerName, message }) => {
+      // Check mode before allowing chat
+    let mode = 'online';
+    try {
+      mode = await gameModel.getGameMode(gameCode);
+    } catch (err) {
+      console.error('Failed to check game mode:', err);
+    }
+    if (mode === 'inperson') return; // Ignore chat in in-person mode
+    
+    // Get current round from DB(NEED TO IMPLEMENT)
+    // For now, we'll just assume round 1
+    let round = 1;
+    try {
+      round = await gameModel.getCurrentRound(gameCode);
+      await gameModel.saveChatMessage(gameCode, round, playerName, message);
+    } catch (err) {
+      console.error('Failed to save chat message:', err);
+    }
+    io.to(gameCode).emit('chatMessage', { playerName, message });
+  });
+
+  // --- End chat handler ---
   socket.on('startGame', (gameCode) => {
     console.log(`Game ${gameCode} started`);
     io.to(gameCode).emit('gameStarted');

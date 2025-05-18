@@ -30,17 +30,19 @@ const socket = io(); // Initialize socket.io client
 let creatorName = '';
 let playerName = '';
 let gameCode = '';
+let gameMode = '';
 
 // CREATE GAME
 async function createGame() {
   playerName = document.getElementById('playerName').value; // Get the creator's name from input
+  gameMode = document.getElementById('gameMode').value; // Get the game mode from input
 
   try {
     // Send a POST request to create a game, including the creator's name
     const res = await fetch('/api/game/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ creatorName: playerName }) // Send the creator's name in the request body
+      body: JSON.stringify({ creatorName: playerName, gameMode }) // Send the creator's name in the request body
     });
 
     if (res.ok) {
@@ -51,7 +53,7 @@ async function createGame() {
       alert('Game created! Game Code: ' + data.gameCode); // Display the game code to the user
       
       // Tell backend we joined the game room
-      socket.emit('joinGame', gameCode, playerName);
+      socket.emit('joinGame', gameCode, playerName, gameMode);
 
       document.getElementById('lobbySection').classList.remove('d-none');
       await loadLobby(gameCode) // Load the lobby with the new game code
@@ -74,19 +76,20 @@ async function createGame() {
 async function joinGame() {
   playerName = document.getElementById('playerName').value;
   gameCode = document.getElementById('gameCodeInput').value.toUpperCase();
+  gameMode = document.getElementById('gameMode').value;
 
   try {
     const res = await fetch('/api/game/join', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: playerName, gameCode })
+      body: JSON.stringify({ name: playerName, gameCode, gameMode })
     });
 
     if (res.ok) {
       alert(`Joined game ${gameCode} successfully!`);
       document.getElementById('lobbySection').classList.remove('d-none');
       // Tell backend we joined the game room
-      socket.emit('joinGame', gameCode, playerName);
+      socket.emit('joinGame', gameCode, playerName, gameMode);
 
       await loadLobby(gameCode);
     } else {
@@ -138,7 +141,7 @@ socket.on('playerJoined', (joinedPlayerName) => {
 
 socket.on('gameStarted', () => {
   alert('Game has started!');
-  window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}`;
+  window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}&mode=${gameMode}`;
 });
 
 function addPlayerToLobby(name) {
