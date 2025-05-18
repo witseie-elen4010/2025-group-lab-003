@@ -1,17 +1,18 @@
 // Generate a 6-char game code
 const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
-exports.createGame = async () => {
+exports.createGame = async (mode = 'online') => {
     const db = require('../config/db');
     const gameCode = generateCode();
     const query = `
-        INSERT INTO GameState (gameCode, round, gameStarted, winner, log)
-        VALUES (@gameCode, 1, 0, NULL, '[]')
+        INSERT INTO GameState (gameCode, round, gameStarted, winner, log, mode)
+        VALUES (@gameCode, 1, 0, NULL, '[]', @mode)
     `;
 
     const pool = await db.poolPromise;
     await pool.request()
         .input('gameCode', db.sql.VarChar, gameCode)
+        .input('mode', db.sql.VarChar, mode)
         .query(query);
 
     return gameCode;
@@ -316,4 +317,14 @@ exports.saveChatMessage = async (gameCode, round, playerName, message) => {
       INSERT INTO ChatMessages (gameCode, round, playerName, message)
       VALUES (@gameCode, @round, @playerName, @message)
     `);
+};
+
+exports.getGameMode = async (gameCode) => {
+    const db = require('../config/db');
+    const pool = await db.poolPromise;
+    const result = await pool.request()
+        .input('gameCode', db.sql.VarChar, gameCode)
+        .query('SELECT mode FROM GameState WHERE gameCode = @gameCode');
+    if (result.recordset.length === 0) throw new Error('Game not found');
+    return result.recordset[0].mode;
 };

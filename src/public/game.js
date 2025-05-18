@@ -2,7 +2,15 @@
 const urlParams = new URLSearchParams(window.location.search);
 const gameCode = urlParams.get('gameCode');
 const playerName = urlParams.get('playerName');
+const gameMode = urlParams.get('mode') || 'online';
 let playerRole = null; // Initialize playerRole
+
+    window.addEventListener('DOMContentLoaded', () => {
+    if (gameMode === 'inperson') {
+      const chatCard = document.getElementById('chatCard');
+    if (chatCard) chatCard.style.display = 'none';
+    }
+    });
 
 const socket = io();
 

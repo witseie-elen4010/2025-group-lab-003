@@ -67,6 +67,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('chatMessage', async ({ gameCode, playerName, message }) => {
+      // Check mode before allowing chat
+    let mode = 'online';
+    try {
+      mode = await gameModel.getGameMode(gameCode);
+    } catch (err) {
+      console.error('Failed to check game mode:', err);
+    }
+    if (mode === 'inperson') return; // Ignore chat in in-person mode
+    
     // Get current round from DB(NEED TO IMPLEMENT)
     // For now, we'll just assume round 1
     let round = 1;
