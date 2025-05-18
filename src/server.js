@@ -1,6 +1,7 @@
 'use strict';
 const express = require('express');
 const path = require('path');
+const gameModel = require('./models/gameModels');
 
 const http = require('http');
 const { Server } = require('socket.io');
