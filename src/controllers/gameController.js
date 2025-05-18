@@ -51,7 +51,7 @@ exports.getPlayers = async (req, res) => {
 };
 
 exports.startGame = async (req, res) => {
-  const { gameCode } = req.body;
+  const { gameCode, gameMode } = req.body;
 
   if (!gameCode) {
     return res.status(400).json({ error: 'Game code is required' });
@@ -60,7 +60,7 @@ exports.startGame = async (req, res) => {
   try {
     await gameModel.assignRolesAndWords(gameCode); // Build on Developer A's start
     console.log(`Game ${gameCode} started with roles assigned.`);
-    res.json({ message: 'Game started' });
+    res.json({ message: 'Game started', gameMode: gameMode || 'online' });
   } catch (err) {
     console.error('Error starting game', err);
     res.status(500).json({ error: 'Failed to start game' });

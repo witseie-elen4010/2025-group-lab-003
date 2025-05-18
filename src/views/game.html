@@ -20,14 +20,14 @@
   </div>
 
   <!-- Chat Box UI -->
-  <div class="card mt-4">
-    <div class="card-header">Game Chat</div>
-    <div class="card-body" style="height:200px; overflow-y:auto;" id="chatBox"></div>
-    <div class="card-footer d-flex">
-      <input id="chatInput" class="form-control me-2" placeholder="Type a message...">
-      <button onclick="sendChat()" class="btn btn-primary">Send</button>
-    </div>
+  <div class="card mt-4" id="chatCard">
+  <div class="card-header">Game Chat</div>
+  <div class="card-body" style="height:200px; overflow-y:auto;" id="chatBox"></div>
+  <div class="card-footer d-flex">
+    <input id="chatInput" class="form-control me-2" placeholder="Type a message...">
+    <button onclick="sendChat()" class="btn btn-primary">Send</button>
   </div>
+</div>
 
   <div id="votingList" class="mt-4">
     <button id="startVoteBtn" class="btn btn-success mt-3" onclick="startVote()">
