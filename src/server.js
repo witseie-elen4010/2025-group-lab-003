@@ -30,6 +30,17 @@ app.get('/eliminated.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'eliminated.html'));
 });
 
+// Winner route
+app.get('/winner.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'winner.html'));
+});
+
+// Loser route
+app.get('/loser.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'loser.html'));
+});
+
+
 // API routes
 const gameRoutes = require('./routes/gameRoutes');
 app.use('/api/game', gameRoutes);

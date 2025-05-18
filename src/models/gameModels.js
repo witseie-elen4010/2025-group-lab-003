@@ -239,7 +239,7 @@ exports.getPlayerById = async (playerId) => {
   return result.recordset[0];
 };
 
-/*
+
 exports.incrementRound = async (gameCode) => {
   const db = require('../config/db');
   const pool = await db.poolPromise;
@@ -247,7 +247,62 @@ exports.incrementRound = async (gameCode) => {
   await pool.request()
     .input('gameCode', db.sql.VarChar, gameCode)
     .query(`UPDATE GameState SET round = round + 1 WHERE gameCode = @gameCode`);
-};*/
+};
+
+exports.assignNewWords = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  // Define new words for roles (can randomize later)
+  const wordSet = {
+    undercover: 'Cherry',  // example new word
+    civilian: 'Grape'
+  };
+
+  const playersResult = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT userId, role FROM Players WHERE gameCode = @gameCode AND status = 'active'`);
+
+  const players = playersResult.recordset;
+
+  // Update word only for each player, keep roles unchanged
+  for (const player of players) {
+    const newWord = wordSet[player.role] || 'Unknown';
+    await pool.request()
+      .input('userId', db.sql.VarChar, player.userId)
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .input('word', db.sql.VarChar, newWord)
+      .query(`
+        UPDATE Players
+        SET word = @word
+        WHERE userId = @userId AND gameCode = @gameCode
+      `);
+  }
+};
+
+exports.getPlayerRoleById = async (playerId) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  const result = await pool.request()
+    .input('playerId', db.sql.Int, playerId)
+    .query(`SELECT userId, role FROM Players WHERE id = @playerId`);
+
+  if (result.recordset.length === 0) throw new Error('Player not found');
+  return result.recordset[0];  // { userId, role }
+};
+
+exports.endGame = async (gameCode, winnerSide) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  // Update the winner column in GameState for the given gameCode
+  await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('winner', db.sql.VarChar, winnerSide)
+    .query(`UPDATE GameState SET winner = @winner, gameStarted = 0 WHERE gameCode = @gameCode`);
+};
+
 
 exports.saveChatMessage = async (gameCode, round, playerName, message) => {
   const db = require('../config/db');
