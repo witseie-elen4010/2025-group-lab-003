@@ -55,37 +55,56 @@ exports.startGame = async (gameCode) => {
 exports.assignRolesAndWords = async (gameCode) => {
     const db = require('../config/db');
     const pool = await db.poolPromise;
-  
-    const roleOptions = ['undercover', 'civilian', 'civilian'];
-    const shuffledRoles = roleOptions.sort(() => Math.random() - 0.5);
-  
-    const wordSet = {
-      undercover: 'Apple',
-      civilian: 'Banana'
-    };
-  
+
+    // Ensure there is exactly one "undercover" and the rest are "civilian"
+    const roleOptions = ['undercover'];
+    const playerCountQuery = `
+      SELECT COUNT(*) AS playerCount FROM Players WHERE gameCode = @gameCode
+    `;
     const result = await pool.request()
-      .input('gameCode', db.sql.VarChar, gameCode)
-      .query(`SELECT userId FROM Players WHERE gameCode = @gameCode`);
-  
-    const players = result.recordset;
-  
-    for (let i = 0; i < players.length; i++) {
-      const role = shuffledRoles[i % shuffledRoles.length];
-      const word = wordSet[role];
-  
-      await pool.request()
-        .input('userId', db.sql.VarChar, players[i].userId)
         .input('gameCode', db.sql.VarChar, gameCode)
-        .input('role', db.sql.VarChar, role)
-        .input('word', db.sql.VarChar, word)
-        .query(`
-          UPDATE Players
-          SET role = @role, word = @word
-          WHERE userId = @userId AND gameCode = @gameCode
-        `);
+        .query(playerCountQuery);
+
+    const playerCount = result.recordset[0].playerCount;
+
+    // Add enough "civilian" roles to the roleOptions array
+    for (let i = 1; i < playerCount; i++) {
+        roleOptions.push('civilian');
     }
-  };
+
+    // Shuffle the roles to distribute them randomly
+    const shuffledRoles = roleOptions.sort(() => Math.random() - 0.5);
+
+    const wordSet = {
+        undercover: 'Apple',
+        civilian: 'Banana'
+    };
+
+    // Get the list of players from the database
+    const playersResult = await pool.request()
+        .input('gameCode', db.sql.VarChar, gameCode)
+        .query(`SELECT userId FROM Players WHERE gameCode = @gameCode`);
+
+    const players = playersResult.recordset;
+
+    // Assign roles and words to each player
+    for (let i = 0; i < players.length; i++) {
+        const role = shuffledRoles[i];
+        const word = wordSet[role];
+
+        await pool.request()
+            .input('userId', db.sql.VarChar, players[i].userId)
+            .input('gameCode', db.sql.VarChar, gameCode)
+            .input('role', db.sql.VarChar, role)
+            .input('word', db.sql.VarChar, word)
+            .query(`
+                UPDATE Players
+                SET role = @role, word = @word
+                WHERE userId = @userId AND gameCode = @gameCode
+            `);
+    }
+};
+
   
   // Get word and role for a specific player
 exports.getPlayerByNameAndGameCode = async (name, gameCode) => {
