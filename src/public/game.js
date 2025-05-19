@@ -30,6 +30,7 @@ socket.on('allVotesIn', (data) => {
 socket.on('playerEliminated', (data) => {
   if (data.eliminatedPlayer === playerName) {
     alert('You have been eliminated!');
+    console.log('You have been eliminated!', );
     if(playerRole !== 'undercover') {
       window.location.href = `/eliminated.html?gameCode=${gameCode}&playerName=${playerName}`;
     }
@@ -52,9 +53,11 @@ socket.on('gameEnded', (data) => {
 
 // When new round starts
 socket.on('newRoundStarted', (data) => {
-  alert(`Round ${data.round} started! Your word has been updated.`);
-  // Reload game.html for new round (preserves playerName and gameCode)
-  window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}`;
+  if(data.eliminatedPlayer !== playerName) {
+    alert(`Round ${data.round} started! Your word has been updated.`);
+    // Reload game.html for new round (preserves playerName and gameCode)
+    window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}`;
+  }
 });
 
 // public/game.js

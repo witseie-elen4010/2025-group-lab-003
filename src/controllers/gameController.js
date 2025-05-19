@@ -162,7 +162,9 @@ async function eliminatePlayer(gameCode, round, io) {
     const currentRound = await gameModel.getCurrentRound(gameCode);
 
     // Notify players to reload the game page with new round info
-    io.to(gameCode).emit('newRoundStarted', { round: currentRound });
+    io.to(gameCode).emit('newRoundStarted', { 
+      round: currentRound, 
+      eliminatedPlayer: eliminatedPlayer.userId });
   }
 
   return eliminatedPlayer.userId;
