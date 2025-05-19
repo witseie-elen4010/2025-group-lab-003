@@ -32,6 +32,21 @@ app.get('/login.html', (req, res) => {
 app.get('/signup.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'signup.html'));
 });
+
+// Loser route
+app.get('/loser.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'loser.html'));
+});
+
+// Winner route
+app.get('/winner.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'winner.html'));
+});
+
+// Elimination route
+app.get('/eliminated.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'eliminated.html'));
+});
   
 // API routes
 const gameRoutes = require('./routes/gameRoutes');
@@ -42,7 +57,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // Store io instance on app so it can be accessed in routes/controllers
-// app.set('io', io);
+app.set('io', io);
 
 //login routes
 const userRoutes = require('./routes/userRoutes');
