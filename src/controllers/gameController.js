@@ -96,10 +96,12 @@ exports.submitVote = async (req, res) => {
     const round = await gameModel.getCurrentRound(gameCode);
 
     await gameModel.recordVote(gameCode, round, voterId, targetId);
-
+    console.log(`Vote recorded: ${voterName} voted for ${votedFor}`);
     const allVotesIn = await gameModel.haveAllPlayersVoted(gameCode, round);
+    console.log('All votes in!!!!!!');
 
     if (allVotesIn) {
+      console.log('All votes are in for round', round);
       const io = req.app.get('io');
       io.to(gameCode).emit('allVotesIn',  { message: 'All votes are in!' });
       // TODO: Something to handle when all votes are in
