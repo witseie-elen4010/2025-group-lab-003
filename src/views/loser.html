@@ -9,8 +9,24 @@
   <p class="fs-4 text-center">
     Better luck next time. Thank you for playing.
   </p>
-  <div class="text-center">
-    <button class="btn btn-primary mt-3" onclick="window.location.href='/'">Return to Lobby</button>
+  <div class="text-center mb-3">
+    <button class="btn btn-primary" onclick="window.location.href='/'">Return to Lobby</button>
   </div>
+  <div class="text-center">
+    <button id="gameResultsBtn" class="btn btn-secondary">Game Results</button>
+  </div>
+
+<script>
+  document.getElementById('gameResultsBtn').onclick = () => {
+    const params = new URLSearchParams(window.location.search);
+    const gameCode = params.get('gameCode');
+
+    if (!gameCode) {
+      alert('Game code missing. Cannot show results.');
+      return;
+    }
+    window.location.href = `/gameResults.html?gameCode=${gameCode}`;
+  };
+</script>
 </body>
 </html>

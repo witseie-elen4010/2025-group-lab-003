@@ -170,5 +170,27 @@ async function eliminatePlayer(gameCode, round, io) {
   return eliminatedPlayer.userId;
 }
 
+//FOR THE RESULTS PAGE
+exports.getGameResults = async (req, res) => {
+  const gameCode = req.params.gameCode;
+
+  try {
+    const gameState = await gameModel.getGameState(gameCode);
+    if (!gameState) return res.status(404).json({ error: 'Game not found' });
+
+    const players = await gameModel.getPlayersWithRoles(gameCode);
+
+    res.json({
+      winnerSide: gameState.winner,
+      roundsPlayed: gameState.round,
+      players: players
+    });
+  } catch (err) {
+    console.error('Error fetching game results:', err);
+    res.status(500).json({ error: 'Failed to fetch game results' });
+  }
+};
+
+
 
 

@@ -376,3 +376,23 @@ exports.getUserByEmail = async (email) => {
 
   return result.recordset[0]; // return user object or undefined
 }; 
+
+// Get overall game state: winner and rounds played
+exports.getGameState = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT winner, round FROM GameState WHERE gameCode = @gameCode`);
+  return result.recordset[0];
+};
+
+// Get all players with their roles for a game
+exports.getPlayersWithRoles = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT userId, role FROM Players WHERE gameCode = @gameCode`);
+  return result.recordset;
+};

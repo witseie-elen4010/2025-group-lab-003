@@ -52,6 +52,12 @@ app.get('/eliminated.html', (req, res) => {
 const gameRoutes = require('./routes/gameRoutes');
 app.use('/api/game', gameRoutes);
 
+//RESULTS
+app.get('/gameResults.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'gameResults.html'));
+}); 
+app.use('/api/game', gameRoutes);
+
 // Create HTTP server and attach Socket.IO
 const server = http.createServer(app);
 const io = new Server(server);
