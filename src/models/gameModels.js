@@ -57,7 +57,9 @@ exports.assignRolesAndWords = async (gameCode) => {
     const pool = await db.poolPromise;
 
     // Ensure there is exactly one "undercover" and the rest are "civilian"
-    const roleOptions = ['undercover'];
+
+   let roleOptions = ['undercover'];
+
     const playerCountQuery = `
       SELECT COUNT(*) AS playerCount FROM Players WHERE gameCode = @gameCode
     `;
@@ -67,17 +69,24 @@ exports.assignRolesAndWords = async (gameCode) => {
 
     const playerCount = result.recordset[0].playerCount;
 
-    // Add enough "civilian" roles to the roleOptions array
-    for (let i = 1; i < playerCount; i++) {
-        roleOptions.push('civilian');
-    }
+    if (playerCount > 3) {
+    roleOptions.push('mr white');
+}
 
+
+// Add enough "civilian" roles to fill remaining players
+for (let i = roleOptions.length; i < playerCount; i++) {
+    roleOptions.push('civilian');
+}
+
+  
     // Shuffle the roles to distribute them randomly
     const shuffledRoles = roleOptions.sort(() => Math.random() - 0.5);
 
     const wordSet = {
         undercover: 'Apple',
-        civilian: 'Banana'
+        civilian: 'Banana',
+        'mr white':'You are Mr White'
     };
 
     // Get the list of players from the database
