@@ -142,7 +142,18 @@ async function eliminatePlayer(gameCode, round, io) {
 
   // Fetch updated players list to send in update
   const updatedPlayers = await gameModel.getPlayersByGameCode(gameCode);
-  
+
+  // Get current active players
+  const activePlayers = updatedPlayers.filter(player => player.status === 'active');
+  const remainingCivilians = activePlayers.filter(player => player.role === 'civilian');
+  const remainingUndercover = activePlayers.filter(player => player.role === 'undercover');
+
+  const totalPlayers = activePlayers.length;
+
+  console.log(`Total players: ${totalPlayers}`);
+  console.log(`Remaining civilians: ${remainingCivilians.length}`);
+  console.log(`Remaining undercover: ${remainingUndercover.length}`);
+
   // Emit elimination event to all clients in the room
   io.to(gameCode).emit('playerEliminated', {
     eliminatedPlayer: eliminatedPlayer.userId,
@@ -150,21 +161,54 @@ async function eliminatePlayer(gameCode, round, io) {
   });
 
   console.log(`Player ${eliminatedPlayer.userId} eliminated. Role: ${eliminatedPlayerRole.role}`);
+
+  // Check game ending conditions
   if (eliminatedPlayerRole.role === 'undercover') {
-    // Impostor eliminated → Game ends, civilians win
+    console.log(`Total players: ${totalPlayers}`);
+    console.log(`Remaining civilians: ${remainingCivilians.length}`);
+    console.log(`Remaining undercover: ${remainingUndercover.length}`);
+    // Undercover eliminated → Game ends, civilians win
+    await gameModel.endGame(gameCode, 'civilian');
+    io.to(gameCode).emit('gameEnded', { winner: 'civilian' });
+  } else if (remainingCivilians.length === 1 && remainingUndercover.length === 1) {
+    console.log('Special case: 1 civilian vs 1 undercover');
+    // Special case: 1 civilian vs 1 undercover → undercover wins
+    await gameModel.endGame(gameCode, 'undercover');
+    io.to(gameCode).emit('gameEnded', { winner: 'undercover' });
+  } else if (remainingCivilians.length === 0) {
+    console.log(`Total players: ${totalPlayers}`);
+    console.log(`Remaining civilians: ${remainingCivilians.length}`);
+    console.log(`Remaining undercover: ${remainingUndercover.length}`);
+    console.log('No civilians left');
+    // No civilians left → undercover wins
+    await gameModel.endGame(gameCode, 'undercover');
+    io.to(gameCode).emit('gameEnded', { winner: 'undercover' });
+  } else if (remainingUndercover.length === 0) {
+    console.log(`Total players: ${totalPlayers}`);
+    console.log(`Remaining civilians: ${remainingCivilians.length}`);
+    console.log(`Remaining undercover: ${remainingUndercover.length}`);
+    console.log('No undercover left');
+    // No undercover left → civilians win
     await gameModel.endGame(gameCode, 'civilian');
     io.to(gameCode).emit('gameEnded', { winner: 'civilian' });
   } else {
-    // Civilian eliminated → Start next round
+    console.log(`Total players: ${totalPlayers}`);
+    console.log(`Remaining civilians: ${remainingCivilians.length}`);
+    console.log(`Remaining undercover: ${remainingUndercover.length}`);
+    // Continue to next round
     await gameModel.incrementRound(gameCode);
     await gameModel.assignNewWords(gameCode);
 
     const currentRound = await gameModel.getCurrentRound(gameCode);
 
-    // Notify players to reload the game page with new round info
-    io.to(gameCode).emit('newRoundStarted', { 
-      round: currentRound, 
-      eliminatedPlayer: eliminatedPlayer.userId });
+    console.log(`Total players: ${totalPlayers}`);
+    console.log(`Remaining civilians: ${remainingCivilians.length}`);
+    console.log(`Remaining undercover: ${remainingUndercover.length}`);
+
+    io.to(gameCode).emit('newRoundStarted', {
+      round: currentRound,
+      eliminatedPlayer: eliminatedPlayer.userId
+    });
   }
 
   return eliminatedPlayer.userId;

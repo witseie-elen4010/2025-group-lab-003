@@ -38,14 +38,14 @@ exports.getPlayersByGameCode = async (gameCode) => {
     const pool = await db.poolPromise;
     const result = await pool.request()
         .input('gameCode', db.sql.VarChar, gameCode)
-        .query(`SELECT userId FROM Players WHERE gameCode = @gameCode`);
+        .query(`SELECT userId, role, status FROM Players WHERE gameCode = @gameCode`);
     return result.recordset;
 };
-  
+
 exports.startGame = async (gameCode) => {
     const db = require('../config/db');
     const pool = await db.poolPromise;
-  
+
     await pool.request()
       .input('gameCode', db.sql.VarChar, gameCode)
       .query(`UPDATE GameState SET gameStarted = 1 WHERE gameCode = @gameCode`);
@@ -105,20 +105,20 @@ exports.assignRolesAndWords = async (gameCode) => {
     }
 };
 
-  
+
   // Get word and role for a specific player
 exports.getPlayerByNameAndGameCode = async (name, gameCode) => {
     const db = require('../config/db');
     const pool = await db.poolPromise;
-  
+
     const result = await pool.request()
       .input('userId', db.sql.VarChar, name)
       .input('gameCode', db.sql.VarChar, gameCode)
       .query(`SELECT word, role FROM Players WHERE userId = @userId AND gameCode = @gameCode`);
-  
+
     return result.recordset[0];
 };
-  
+
 exports.recordVote = async (gameCode, round, voterId, targetId) => {
   const db = require('../config/db');
   const pool = await db.poolPromise;
@@ -131,8 +131,8 @@ exports.recordVote = async (gameCode, round, voterId, targetId) => {
   const existingVote = await pool.request()
     .input('gameCode', db.sql.VarChar, gameCode)
     .input('round', db.sql.Int, round)
-    .input('voterId', db.sql.Int, voterId)          
-    .query(`SELECT COUNT(*) AS count FROM Votes 
+    .input('voterId', db.sql.Int, voterId)
+    .query(`SELECT COUNT(*) AS count FROM Votes
             WHERE gameCode = @gameCode AND round = @round AND voterId = @voterId`);
 
   if (existingVote.recordset[0].count > 0) {
@@ -148,8 +148,8 @@ exports.recordVote = async (gameCode, round, voterId, targetId) => {
   await pool.request()
     .input('gameCode', db.sql.VarChar, gameCode)
     .input('round', db.sql.Int, round)
-    .input('voterId', db.sql.Int, voterId)         
-    .input('targetId', db.sql.Int, targetId)       
+    .input('voterId', db.sql.Int, voterId)
+    .input('targetId', db.sql.Int, targetId)
     .query(insertQuery);
 };
 
@@ -169,7 +169,7 @@ exports.getCurrentRound = async (gameCode) => {
 exports.getPlayerIdByUserId = async (gameCode, userId) => {
   const db = require('../config/db');
   const pool = await db.poolPromise;
-  
+
   const result = await pool.request()
     .input('gameCode', db.sql.VarChar, gameCode)
     .input('userId', db.sql.VarChar, userId)
@@ -350,7 +350,7 @@ exports.getGameMode = async (gameCode) => {
 
 // Insert a new user into Users table
 exports.createUser = async (name, email, passwordHash) => {
-  const db = require('../config/db'); 
+  const db = require('../config/db');
   const pool = await db.poolPromise;
   const query = `
     INSERT INTO Users (name, email, password_hash)
@@ -366,7 +366,7 @@ exports.createUser = async (name, email, passwordHash) => {
 
 // Find a user by email
 exports.getUserByEmail = async (email) => {
-  const db = require('../config/db'); 
+  const db = require('../config/db');
   const pool = await db.poolPromise;
   const query = `SELECT * FROM Users WHERE email = @email`;
 
@@ -375,4 +375,4 @@ exports.getUserByEmail = async (email) => {
     .query(query);
 
   return result.recordset[0]; // return user object or undefined
-}; 
+};

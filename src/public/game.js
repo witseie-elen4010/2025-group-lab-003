@@ -74,12 +74,15 @@ window.addEventListener('DOMContentLoaded', async () => {
         // Only show the player's word — omit role
         playerRole = data.role;
         document.getElementById('playerWord').textContent = data.word;
+        //document.getElementById('playerRole').textContent = `Your role: ${data.role}`;
       } else {
         document.getElementById('playerWord').textContent = data.error || 'Could not load your word.';
+        //document.getElementById('playerRole').textContent = 'Unknown role';
       }
     } catch (err) {
       console.error('Error fetching word:', err.message);
       document.getElementById('playerWord').textContent = 'An unexpected error occurred.';
+      //document.getElementById('playerRole').textContent = 'Unknown role';
     }
   });
   
