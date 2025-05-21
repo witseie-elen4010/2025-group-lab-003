@@ -69,6 +69,14 @@ app.set('io', io);
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/user', userRoutes);
 
+//admin routes
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
+app.get('/adminLogs.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'adminLogs.html'));
+}); 
+
+
 // Set up a Socket.IO connection handler
 io.on('connection', (socket) => {
   console.log('A user connected');

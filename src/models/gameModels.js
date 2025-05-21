@@ -1,3 +1,5 @@
+const logAction = require('../models/gameModels');
+
 // Generate a 6-char game code
 const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -49,6 +51,9 @@ exports.startGame = async (gameCode) => {
     await pool.request()
       .input('gameCode', db.sql.VarChar, gameCode)
       .query(`UPDATE GameState SET gameStarted = 1 WHERE gameCode = @gameCode`);
+
+    // Log the start game action:
+    await logAction(playerName, 'START_GAME', `In game ${gameCode}`);
   };
 
 // Assign roles and words to players
@@ -336,6 +341,9 @@ exports.saveChatMessage = async (gameCode, round, playerName, message) => {
       INSERT INTO ChatMessages (gameCode, round, playerName, message)
       VALUES (@gameCode, @round, @playerName, @message)
     `);
+
+  // Log the chat message action:
+  await logAction(playerName, 'CHAT_MESSAGE', `In game ${gameCode}, round ${round}: ${message}`);
 };
 
 exports.getGameMode = async (gameCode) => {
@@ -396,3 +404,4 @@ exports.getPlayersWithRoles = async (gameCode) => {
     .query(`SELECT userId, role FROM Players WHERE gameCode = @gameCode`);
   return result.recordset;
 };
+

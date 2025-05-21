@@ -114,7 +114,7 @@ async function startGame() {
     const res = await fetch(`/api/game/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gameCode })
+      body: JSON.stringify({ gameCode, playerName })
     });
 
     if (res.ok) {
