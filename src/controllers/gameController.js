@@ -1,4 +1,5 @@
 const gameModel = require('../models/gameModels');
+const logAction = require('../models/adminModel');
 
 exports.createGame = async (req, res) => {
   const { creatorName } = req.body;
@@ -10,6 +11,9 @@ exports.createGame = async (req, res) => {
   try {
     const gameCode = await gameModel.createGame();
     await gameModel.joinGame(creatorName, gameCode);
+
+    // Log this action
+    await logAction(creatorName, 'CREATE_GAME', `Game code: ${gameCode}`);
 
     console.log('Game created and creator joined successfully', gameCode);
     res.json({ message: 'Game created successfully', gameCode });
@@ -29,6 +33,10 @@ exports.joinGame = async (req, res) => {
   try {
     await gameModel.joinGame(name, gameCode);
     console.log(`${name} joined game ${gameCode}`);
+
+    // Log this action
+    await logAction(name, 'JOIN_GAME', `Game code: ${gameCode}`);
+
     res.json({ message: 'Joined game successfully' });
   } catch (err) {
     console.error('Error joining game:', err);
@@ -51,7 +59,7 @@ exports.getPlayers = async (req, res) => {
 };
 
 exports.startGame = async (req, res) => {
-  const { gameCode, gameMode } = req.body;
+  const { gameCode, gameMode, playerName } = req.body;
 
   if (!gameCode) {
     return res.status(400).json({ error: 'Game code is required' });
@@ -60,6 +68,10 @@ exports.startGame = async (req, res) => {
   try {
     await gameModel.assignRolesAndWords(gameCode); // Build on Developer A's start
     console.log(`Game ${gameCode} started with roles assigned.`);
+
+    // Log this action
+    await logAction(playerName, 'START_GAME', `Started game ${gameCode}`);
+
     res.json({ message: 'Game started', gameMode: gameMode || 'online' });
   } catch (err) {
     console.error('Error starting game', err);
@@ -96,6 +108,10 @@ exports.submitVote = async (req, res) => {
     const round = await gameModel.getCurrentRound(gameCode);
 
     await gameModel.recordVote(gameCode, round, voterId, targetId);
+
+    // Log this action
+    await logAction(voterName, 'VOTE', `Voted for ${votedFor} in game ${gameCode}`);
+
     console.log(`Vote recorded: ${voterName} voted for ${votedFor}`);
     const allVotesIn = await gameModel.haveAllPlayersVoted(gameCode, round);
     console.log('All votes in!!!!!!');
@@ -169,6 +185,28 @@ async function eliminatePlayer(gameCode, round, io) {
 
   return eliminatedPlayer.userId;
 }
+
+//FOR THE RESULTS PAGE
+exports.getGameResults = async (req, res) => {
+  const gameCode = req.params.gameCode;
+
+  try {
+    const gameState = await gameModel.getGameState(gameCode);
+    if (!gameState) return res.status(404).json({ error: 'Game not found' });
+
+    const players = await gameModel.getPlayersWithRoles(gameCode);
+
+    res.json({
+      winnerSide: gameState.winner,
+      roundsPlayed: gameState.round,
+      players: players
+    });
+  } catch (err) {
+    console.error('Error fetching game results:', err);
+    res.status(500).json({ error: 'Failed to fetch game results' });
+  }
+};
+
 
 
 

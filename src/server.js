@@ -52,6 +52,12 @@ app.get('/eliminated.html', (req, res) => {
 const gameRoutes = require('./routes/gameRoutes');
 app.use('/api/game', gameRoutes);
 
+//RESULTS
+app.get('/gameResults.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'gameResults.html'));
+}); 
+app.use('/api/game', gameRoutes);
+
 // Create HTTP server and attach Socket.IO
 const server = http.createServer(app);
 const io = new Server(server);
@@ -62,6 +68,14 @@ app.set('io', io);
 //login routes
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/user', userRoutes);
+
+//admin routes
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
+app.get('/adminLogs.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'adminLogs.html'));
+}); 
+
 
 // Set up a Socket.IO connection handler
 io.on('connection', (socket) => {

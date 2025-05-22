@@ -9,6 +9,7 @@ router.post('/start', gameController.startGame);
 router.get('/players/:gameCode', gameController.getPlayers);
 router.get('/player/:gameCode/:playerName', gameController.getPlayerWord); 
 router.post('/vote', gameController.submitVote);
+router.get('/results/:gameCode', gameController.getGameResults);
 
 
 module.exports = router;
