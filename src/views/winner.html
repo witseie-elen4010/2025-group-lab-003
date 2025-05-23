@@ -16,17 +16,11 @@
     <button id="gameResultsBtn" class="btn btn-secondary">Game Results</button>
   </div>
 
-<script>
-  document.getElementById('gameResultsBtn').onclick = () => {
-    const params = new URLSearchParams(window.location.search);
-    const gameCode = params.get('gameCode');
-
-    if (!gameCode) {
-      alert('Game code missing. Cannot show results.');
-      return;
-    }
-    window.location.href = `/gameResults.html?gameCode=${gameCode}`;
-  };
-</script>
+  <div class="text-center mt-3">
+  <button id="viewLogsBtn" class="btn btn-outline-secondary" style="display: none;">
+    View Admin Logs
+  </button>
+  </div>
+<script src="/gameEnd.js" defer></script>
 </body>
 </html>

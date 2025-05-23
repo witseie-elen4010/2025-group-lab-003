@@ -17,22 +17,25 @@
   <!-- Buttons for Create and Join Game -->
   <div class="mb-3 d-flex flex-wrap gap-2">
     <button onclick="createGame()" class="btn btn-warning">Create Game</button>
-    <button onclick="joinGame()" class="btn btn-primary">Join Game</button>
+
+  <!-- Initial Join Game button -->
+  <button id="joinGameBtn" class="btn btn-primary">Join Game</button>
+
+  <!-- Hidden join input section -->
+  <div id="joinGameInputSection" class="d-none">
+    <input type="text" id="gameCodeInput" class="form-control" placeholder="Enter Game Code">
+    <button id="confirmJoinBtn" class="btn btn-primary mt-2">Confirm Join</button>
   </div>
 
-  <!-- Input for Game Code (for Start Game action) -->
-  <div class="mb-3">
-    <input type="text" id="gameCodeInput" class="form-control" placeholder="Enter Game Code to Start">
-  </div>
-
-    <!-- Game Mode dropdown menu -->
-  <div class="mb-3">
+  <!-- Game Mode dropdown menu, hidden by default -->
+<div id="gameModeContainer" class="mb-3 d-none">
   <label for="gameMode" class="form-label">Game Mode:</label>
   <select id="gameMode" class="form-select">
     <option value="online" selected>Online</option>
     <option value="inperson">In-Person</option>
   </select>
 </div>
+
 
   <!-- Error message container -->
   <div id="errorDisplay" class="alert alert-danger d-none" role="alert"></div>

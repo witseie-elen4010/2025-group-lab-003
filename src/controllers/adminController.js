@@ -2,11 +2,18 @@ const db = require('../config/db');
 
 //ADMIN LOG
 exports.getActionLogs = async (req, res) => {
-  // TODO: add real admin check later
+  const { gameCode } = req.params;
+
+  if (!gameCode) {
+    return res.status(400).json({ error: 'Game code is required' });
+  }
+
   try {
     const pool = await db.poolPromise;
     const result = await pool.request()
-      .query(`SELECT * FROM ActionLogs ORDER BY timestamp DESC`);
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .query(`SELECT * FROM ActionLogs WHERE gameCode = @gameCode ORDER BY timestamp DESC`);
+
     res.json(result.recordset);
   } catch (err) {
     console.error('Error fetching action logs:', err);
