@@ -1,22 +1,27 @@
+const logAction = require('../models/adminModel');
+
 // Generate a 6-char game code
 const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
-exports.createGame = async (mode = 'online') => {
-    const db = require('../config/db');
-    const gameCode = generateCode();
-    const query = `
-        INSERT INTO GameState (gameCode, round, gameStarted, winner, log, mode)
-        VALUES (@gameCode, 1, 0, NULL, '[]', @mode)
-    `;
+exports.createGame = async (creatorName, mode = 'online') => {
+  const db = require('../config/db');
+  const gameCode = generateCode();
 
-    const pool = await db.poolPromise;
-    await pool.request()
-        .input('gameCode', db.sql.VarChar, gameCode)
-        .input('mode', db.sql.VarChar, mode)
-        .query(query);
+  const query = `
+    INSERT INTO GameState (gameCode, round, gameStarted, winner, log, mode, adminUserId)
+    VALUES (@gameCode, 1, 0, NULL, '[]', @mode, @creatorName)
+  `;
 
-    return gameCode;
+  const pool = await db.poolPromise;
+  await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('mode', db.sql.VarChar, mode)
+    .input('creatorName', db.sql.VarChar, creatorName)
+    .query(query);
+
+  return gameCode;
 };
+
 
 exports.joinGame = async (playerName, gameCode) => {
     const db = require('../config/db');
@@ -49,6 +54,9 @@ exports.startGame = async (gameCode) => {
     await pool.request()
       .input('gameCode', db.sql.VarChar, gameCode)
       .query(`UPDATE GameState SET gameStarted = 1 WHERE gameCode = @gameCode`);
+
+    // Log the start game action:
+    await logAction(playerName, 'START_GAME', `In game ${gameCode}`);
   };
 
 // Assign roles and words to players
@@ -336,6 +344,9 @@ exports.saveChatMessage = async (gameCode, round, playerName, message) => {
       INSERT INTO ChatMessages (gameCode, round, playerName, message)
       VALUES (@gameCode, @round, @playerName, @message)
     `);
+
+  // Log the chat message action:
+  await logAction(playerName, 'CHAT_MESSAGE', `In game ${gameCode}, round ${round}: ${message}`, gameCode);
 };
 
 exports.getGameMode = async (gameCode) => {
@@ -376,3 +387,56 @@ exports.getUserByEmail = async (email) => {
 
   return result.recordset[0]; // return user object or undefined
 };
+
+// Get overall game state: winner and rounds played
+exports.getGameState = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT winner, round FROM GameState WHERE gameCode = @gameCode`);
+  return result.recordset[0];
+};
+
+// Get all players with their roles for a game
+exports.getPlayersWithRoles = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT userId, role FROM Players WHERE gameCode = @gameCode`);
+  return result.recordset;
+};
+
+//RETURNING THE ADMIN USER
+exports.getAdminUserId = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT adminUserId FROM GameState WHERE gameCode = @gameCode`);
+  return result.recordset[0]?.adminUserId;
+};
+
+// UPDATING THE GAME MODE
+exports.updateGameMode = async (gameCode, mode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+  const query = `
+    UPDATE GameState
+    SET mode = @mode
+    WHERE gameCode = @gameCode
+  `;
+
+  await pool.request()
+    .input('mode', db.sql.VarChar, mode)
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(query);
+
+  console.log(`Updated game mode to ${mode} for gameCode ${gameCode}`);
+};
+
+
+
+
+

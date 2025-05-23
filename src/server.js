@@ -7,6 +7,9 @@ const { Server } = require('socket.io');
 
 const app = express();
 
+const logAction = require('./models/adminModel');
+const gameModel = require('./models/gameModels');
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -52,6 +55,12 @@ app.get('/eliminated.html', (req, res) => {
 const gameRoutes = require('./routes/gameRoutes');
 app.use('/api/game', gameRoutes);
 
+//RESULTS
+app.get('/gameResults.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'gameResults.html'));
+}); 
+app.use('/api/game', gameRoutes);
+
 // Create HTTP server and attach Socket.IO
 const server = http.createServer(app);
 const io = new Server(server);
@@ -63,15 +72,31 @@ app.set('io', io);
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/user', userRoutes);
 
+//admin routes
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
+app.get('/adminLogs.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'adminLogs.html'));
+}); 
+
+
+// ------------------------------- SOCKET CODE ------------------------------------------------------------------------------------
+
 // Set up a Socket.IO connection handler
 io.on('connection', (socket) => {
   console.log('A user connected');
 
-  socket.on('joinGame', (gameCode, playerName) => {
-    console.log(`${playerName} joined game: ${gameCode}`);
-    socket.join(gameCode);
-    io.to(gameCode).emit('playerJoined', playerName);
-  });
+  socket.on('joinGame', async (gameCode, playerName, gameMode) => {
+  console.log(`${playerName} joined game: ${gameCode}`);
+  socket.join(gameCode);
+
+  // Fetch updated player list for this game
+  const players = await gameModel.getPlayersByGameCode(gameCode); 
+
+  // Broadcast updated player list to everyone in the room
+  io.to(gameCode).emit('updatePlayerList', players);
+});
+
 
   // --- Chat handler ---
   socket.on('joinRoom', (gameCode) => {
@@ -101,10 +126,19 @@ io.on('connection', (socket) => {
   });
 
   // --- End chat handler ---
-  socket.on('startGame', (gameCode) => {
-    console.log(`Game ${gameCode} started`);
-    io.to(gameCode).emit('gameStarted');
-  });
+  socket.on('startGame', async (gameCode) => {
+  console.log(`Game ${gameCode} started`);
+
+  let mode = 'online';
+  try {
+    mode = await gameModel.getGameMode(gameCode);
+  } catch (err) {
+    console.error('Failed to fetch game mode for started game:', err);
+  }
+
+  io.to(gameCode).emit('gameStarted', { gameMode: mode });
+});
+
 
   socket.on('disconnect', () => {
     console.log('A user disconnected');
