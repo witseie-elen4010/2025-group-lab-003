@@ -1,14 +1,9 @@
 const mssql = require('mssql');
 require('dotenv').config();
 
-const config = {
-  connectionString: process.env.INCOGNITO_CONNECTION_STRING,
-  options: {
-    encrypt: true,  // for Azure
-  },
-};
+const connectionString = process.env.INCOGNITO_CONNECTION_STRING;
 
-const poolPromise = mssql.connect(config.connectionString)
+const poolPromise = mssql.connect(connectionString)
   .then(pool => {
     console.log('✅ Connected to Azure SQL Database');
     return pool;
@@ -18,9 +13,8 @@ const poolPromise = mssql.connect(config.connectionString)
     throw err;  // Important: re-throw error to avoid resolving to undefined
   });
 
-
 module.exports = {
-  connectionString: process.env.INCOGNITO_CONNECTION_STRING,
+  connectionString,
   sql: mssql,
   poolPromise,
 };
