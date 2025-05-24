@@ -10,6 +10,9 @@ async function handleSignup(event) {
   errorDiv.classList.add('d-none');
   errorDiv.textContent = '';
 
+    const signupButton = document.querySelector('#signupForm button[type="submit"]');
+    if (signupButton) signupButton.disabled = true;  // Disable button 
+
   try {
     const res = await fetch('/api/user/signup', {
       method: 'POST',
@@ -38,6 +41,9 @@ async function handleSignup(event) {
       title: '🌐 Connection Error'
     });
   }
+  setTimeout(() => {
+    if (signupButton) signupButton.disabled = false;
+  }, 3000);
 }
 
 async function handleLogin(event) {
