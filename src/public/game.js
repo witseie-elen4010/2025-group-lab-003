@@ -77,33 +77,66 @@ socket.emit('joinRoom', gameCode);
 
 // Voting and game events
 socket.on('allVotesIn', (data) => {
-  alert(data.message || 'All players have voted!');
+  showGameNotification(data.message || 'All players have voted!');
 });
 
 socket.on('playerEliminated', (data) => {
   if (data.eliminatedPlayer === playerName) {
-    alert('You have been eliminated!');
-    if (playerRole !== 'undercover') {
-      window.location.href = `/eliminated.html?gameCode=${gameCode}&playerName=${playerName}`;
-    }
+    showGameNotification('You have been eliminated! Redirecting...', {
+      type: 'error',
+      duration: 3000
+    });
+
+    // Automatically redirect eliminated players after 3 seconds
+    setTimeout(() => {
+      if(playerRole !== 'undercover') {
+        window.location.href = `/eliminated.html?gameCode=${gameCode}&playerName=${playerName}`;
+      }
+    }, 3000);
   } else {
-    alert(`Player eliminated: ${data.eliminatedPlayer}`);
+    showGameNotification(`Player eliminated: ${data.eliminatedPlayer}`, {
+      type: 'warning'
+    });
   }
 });
 
 socket.on('gameEnded', (data) => {
-  alert(`Game over! Winner: ${data.winner}s`);
-  if (playerRole === data.winner) {
-    window.location.href = `/winner.html?gameCode=${gameCode}&playerName=${playerName}&winnerSide=${data.winner}`;
-  } else {
-    window.location.href = `/loser.html?gameCode=${gameCode}&playerName=${playerName}&winnerSide=${data.winner}`;
-  }
+  const isWinner = playerRole === data.winner;
+  const title = isWinner ? '🎉 You Won!' : '😞 Game Over';
+  const message = `Game over! Winner: ${data.winner}s. Redirecting...`;
+
+  console.log('Game ended, redirecting to results page...', { isWinner, winner: data.winner, playerRole });
+
+  showGameNotification(message, {
+    title: title,
+    type: isWinner ? 'success' : 'error',
+    duration: 2500
+  });
+
+  // Automatically redirect all players to the appropriate results page
+  setTimeout(() => {
+    if (isWinner) {
+      console.log('Redirecting to winner page...');
+      window.location.href = `/winner.html?gameCode=${gameCode}&playerName=${playerName}&winnerSide=${data.winner}`;
+    } else {
+      console.log('Redirecting to loser page...');
+      window.location.href = `/loser.html?gameCode=${gameCode}&playerName=${playerName}&winnerSide=${data.winner}`;
+    }
+  }, 2500);
 });
 
 socket.on('newRoundStarted', (data) => {
   if (data.eliminatedPlayer !== playerName) {
-    alert(`Round ${data.round} started! Your word has been updated.`);
-    window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}&mode=${gameMode}`;
+    showGameNotification(`Round ${data.round} started! Your word has been updated. Reloading...`, {
+      title: '🔄 New Round',
+      type: 'info',
+      duration: 2500
+    });
+
+    // Automatically reload the game page for the new round
+    setTimeout(() => {
+      window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}&mode=${gameMode}`;
+    }, 2500);
   }
 });
 
@@ -126,14 +159,14 @@ async function startVote() {
       btn.className = 'btn btn-outline-danger m-1';
       btn.innerText = `Vote ${player.userId}`;
       btn.onclick = () => {
-        if (confirm(`Are you sure you want to vote for ${player.userId}?`)) {
-          submitVote(player.userId);
-        }
+        showConfirmNotification(`Are you sure you want to vote for ${player.userId}?`,
+          () => submitVote(player.userId)
+        );
       };
       votingList.appendChild(btn);
     });
   } catch (err) {
-    alert('Error loading players for voting');
+    showErrorNotification('Error loading players for voting');
     console.error(err);
   }
 }
@@ -151,14 +184,14 @@ async function submitVote(votedPlayer) {
     });
 
     if (response.ok) {
-      alert(`Your vote for ${votedPlayer} has been recorded.`);
+      showSuccessNotification(`Your vote for ${votedPlayer} has been recorded.`);
       document.getElementById('votingList').innerHTML = '<p>Thank you for voting!</p>';
     } else {
       const errorData = await response.json();
-      alert(`Failed to submit vote: ${errorData.error || 'Unknown error'}`);
+      showErrorNotification(`Failed to submit vote: ${errorData.error || 'Unknown error'}`);
     }
   } catch (error) {
-    alert('Error submitting vote. Please try again.');
+    showErrorNotification('Error submitting vote. Please try again.');
     console.error(error);
   }
 }

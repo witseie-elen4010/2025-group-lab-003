@@ -18,16 +18,25 @@ async function handleSignup(event) {
     });
 
     if (res.ok) {
-      alert('Signup successful! You can now log in.');
-      window.location.href = '/login.html';
+      showSuccessNotification('Signup successful! Redirecting to login...', {
+        title: '🎉 Welcome!',
+        duration: 2500
+      });
+
+      // Automatically redirect to login page
+      setTimeout(() => {
+        window.location.href = '/login.html';
+      }, 2500);
     } else {
       const errorData = await res.json();
-      errorDiv.textContent = errorData.error || 'Signup failed';
-      errorDiv.classList.remove('d-none');
+      showErrorNotification(errorData.error || 'Signup failed', {
+        title: '❌ Signup Failed'
+      });
     }
   } catch (err) {
-    errorDiv.textContent = 'Network error, please try again.';
-    errorDiv.classList.remove('d-none');
+    showErrorNotification('Network error, please try again.', {
+      title: '🌐 Connection Error'
+    });
   }
 }
 
@@ -54,16 +63,25 @@ async function handleLogin(event) {
       sessionStorage.setItem('token', data.token);
       sessionStorage.setItem('user', JSON.stringify(data.user));
 
-      alert('Login successful! Redirecting to lobby...');
-      window.location.href = '/'; // Redirect to your lobby or home page
+      showSuccessNotification('Login successful! Redirecting to lobby...', {
+        title: '🎮 Welcome Back!',
+        duration: 2000
+      });
+
+      // Automatically redirect to lobby
+      setTimeout(() => {
+        window.location.href = '/'; // Redirect to your lobby or home page
+      }, 2000);
     } else {
       const errorData = await res.json();
-      errorDiv.textContent = errorData.error || 'Login failed';
-      errorDiv.classList.remove('d-none');
+      showErrorNotification(errorData.error || 'Login failed', {
+        title: '❌ Login Failed'
+      });
     }
   } catch (err) {
-    errorDiv.textContent = 'Network error, please try again.';
-    errorDiv.classList.remove('d-none');
+    showErrorNotification('Network error, please try again.', {
+      title: '🌐 Connection Error'
+    });
   }
 }
 
