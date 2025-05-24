@@ -18,7 +18,6 @@ exports.createGame = async (req, res) => {
     console.log('Game created and creator joined successfully', gameCode);
     res.json({ message: 'Game created successfully', gameCode });
   } catch (err) {
-    console.error('Error creating game', err);
     res.status(500).json({ error: 'Error creating game' });
   }
 };
@@ -39,7 +38,6 @@ exports.joinGame = async (req, res) => {
 
     res.json({ message: 'Joined game successfully' });
   } catch (err) {
-    console.error('Error joining game:', err);
     res.status(500).json({ error: 'Failed to join game' });
   }
 };
@@ -53,7 +51,6 @@ exports.getPlayers = async (req, res) => {
     console.log('Players fetched successfully', players);
     res.json(players);
   } catch (err) {
-    console.error('Error fetching players', err);
     res.status(500).json({ error: 'Failed to fetch players' });
   }
 };
@@ -83,7 +80,6 @@ exports.startGame = async (req, res) => {
 
     res.json({ message: 'Game started', gameMode: gameMode || 'online' });
   } catch (err) {
-    console.error('Error starting game', err);
     res.status(500).json({ error: 'Failed to start game' });
   }
 };
@@ -100,7 +96,6 @@ exports.getPlayerWord = async (req, res) => {
 
     res.json({ word: player.word, role: player.role });
   } catch (err) {
-    console.error('Error fetching player word/role:', err);
     res.status(500).json({ error: 'Failed to fetch player data' });
   }
 };
@@ -169,6 +164,17 @@ async function eliminatePlayer(gameCode, round, io) {
   // Fetch updated players list to send in update
   const updatedPlayers = await gameModel.getPlayersByGameCode(gameCode);
 
+  // Get current active players
+  const activePlayers = updatedPlayers.filter(player => player.status === 'active');
+  const remainingCivilians = activePlayers.filter(player => player.role === 'civilian');
+  const remainingUndercover = activePlayers.filter(player => player.role === 'undercover');
+
+  const totalPlayers = activePlayers.length;
+
+  console.log(`Total players: ${totalPlayers}`);
+  console.log(`Remaining civilians: ${remainingCivilians.length}`);
+  console.log(`Remaining undercover: ${remainingUndercover.length}`);
+
   // Emit elimination event to all clients in the room
   io.to(gameCode).emit('playerEliminated', {
     eliminatedPlayer: eliminatedPlayer.userId,
@@ -176,40 +182,22 @@ async function eliminatePlayer(gameCode, round, io) {
   });
 
   console.log(`Player ${eliminatedPlayer.userId} eliminated. Role: ${eliminatedPlayerRole.role}`);
-
   if (eliminatedPlayerRole.role === 'undercover') {
-    // Undercover eliminated → Game ends, civilians win
-    console.log('Undercover player eliminated - Civilians win!');
+    // Impostor eliminated → Game ends, civilians win
     await gameModel.endGame(gameCode, 'civilian');
     console.log(`Emitting gameEnded event to room ${gameCode} - winner: civilian`);
     io.to(gameCode).emit('gameEnded', { winner: 'civilian' });
   } else {
-    // Civilian eliminated → Check if undercover wins or continue game
-    const remainingPlayers = await gameModel.getActivePlayers(gameCode);
-    const remainingCivilians = remainingPlayers.filter(p => p.role === 'civilian').length;
-    const remainingUndercover = remainingPlayers.filter(p => p.role === 'undercover').length;
-
-    console.log(`Remaining players: ${remainingCivilians} civilians, ${remainingUndercover} undercover`);
-
-    // Undercover wins if they equal or outnumber civilians (typically when 2 players left: 1 undercover, 1 civilian)
-    if (remainingUndercover >= remainingCivilians || remainingPlayers.length <= 2) {
-      console.log('Undercover player wins!');
-      await gameModel.endGame(gameCode, 'undercover');
-      console.log(`Emitting gameEnded event to room ${gameCode} - winner: undercover`);
-      io.to(gameCode).emit('gameEnded', { winner: 'undercover' });
-    } else {
-      // Continue to next round
-      console.log('Game continues to next round');
-      await gameModel.incrementRound(gameCode);
-      await gameModel.assignNewWords(gameCode);
+    // Civilian eliminated → Start next round
+    await gameModel.incrementRound(gameCode);
+    await gameModel.assignNewWords(gameCode);
 
       const currentRound = await gameModel.getCurrentRound(gameCode);
 
-      // Notify players to reload the game page with new round info
-      io.to(gameCode).emit('newRoundStarted', {
-        round: currentRound,
-        eliminatedPlayer: eliminatedPlayer.userId });
-    }
+    // Notify players to reload the game page with new round info
+    io.to(gameCode).emit('newRoundStarted', { 
+      round: currentRound, 
+      eliminatedPlayer: eliminatedPlayer.userId });
   }
 
   return eliminatedPlayer.userId;

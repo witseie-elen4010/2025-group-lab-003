@@ -43,7 +43,7 @@ exports.getPlayersByGameCode = async (gameCode) => {
     const pool = await db.poolPromise;
     const result = await pool.request()
         .input('gameCode', db.sql.VarChar, gameCode)
-        .query(`SELECT userId FROM Players WHERE gameCode = @gameCode`);
+        .query(`SELECT userId, role, status FROM Players WHERE gameCode = @gameCode`);
     return result.recordset;
 };
 
