@@ -181,6 +181,7 @@ async function startVote() {
 
     players.forEach(player => {
       if (player.userId === playerName) return;
+      if (player.status === 'eliminated') return;
       const btn = document.createElement('button');
       btn.className = 'btn btn-outline-danger m-1';
       btn.innerText = `Vote ${player.userId}`;
