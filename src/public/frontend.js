@@ -1,3 +1,4 @@
+'use strict';
 // Redirect to login if no auth token
 function isTokenExpired(token) {
   if (!token) return true;
@@ -81,6 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
   joinGameBtn.addEventListener('click', () => {
     joinGameBtn.classList.add('d-none');
     joinGameInputSection.classList.remove('d-none');
+  });
+
+  confirmJoinBtn.addEventListener('click', () => {
+    confirmJoinBtn.disabled = true;
   });
 
   // When user clicks confirm, call joinGame()
