@@ -10,6 +10,9 @@ async function handleSignup(event) {
   errorDiv.classList.add('d-none');
   errorDiv.textContent = '';
 
+    const signupButton = document.querySelector('#signupForm button[type="submit"]');
+    if (signupButton) signupButton.disabled = true;  // Disable button 
+
   try {
     const res = await fetch('/api/user/signup', {
       method: 'POST',
@@ -38,6 +41,9 @@ async function handleSignup(event) {
       title: '🌐 Connection Error'
     });
   }
+  setTimeout(() => {
+    if (signupButton) signupButton.disabled = false;
+  }, 3000);
 }
 
 async function handleLogin(event) {
@@ -49,6 +55,9 @@ async function handleLogin(event) {
   const errorDiv = document.getElementById('loginError');
   errorDiv.classList.add('d-none');
   errorDiv.textContent = '';
+
+  const loginButton = document.querySelector('#loginForm button[type="submit"]');
+  if (loginButton) loginButton.disabled = true;  // Disable button immediately
 
   try {
     const res = await fetch('/api/user/login', {
@@ -83,6 +92,11 @@ async function handleLogin(event) {
       title: '🌐 Connection Error'
     });
   }
+
+  // Re-enable login button after 3 seconds
+  setTimeout(() => {
+    if (loginButton) loginButton.disabled = false;
+  }, 3000);
 }
 
 // Attach event listeners after DOM loads
