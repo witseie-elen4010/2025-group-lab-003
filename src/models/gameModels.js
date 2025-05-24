@@ -54,9 +54,6 @@ exports.startGame = async (gameCode) => {
     await pool.request()
       .input('gameCode', db.sql.VarChar, gameCode)
       .query(`UPDATE GameState SET gameStarted = 1 WHERE gameCode = @gameCode`);
-
-    // Log the start game action:
-    await logAction(playerName, 'START_GAME', `In game ${gameCode}`);
   };
 
 // Assign roles and words to players

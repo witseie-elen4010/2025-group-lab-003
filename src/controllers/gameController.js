@@ -18,7 +18,6 @@ exports.createGame = async (req, res) => {
     console.log('Game created and creator joined successfully', gameCode);
     res.json({ message: 'Game created successfully', gameCode });
   } catch (err) {
-    console.error('Error creating game', err);
     res.status(500).json({ error: 'Error creating game' });
   }
 };
@@ -39,7 +38,6 @@ exports.joinGame = async (req, res) => {
 
     res.json({ message: 'Joined game successfully' });
   } catch (err) {
-    console.error('Error joining game:', err);
     res.status(500).json({ error: 'Failed to join game' });
   }
 };
@@ -53,7 +51,6 @@ exports.getPlayers = async (req, res) => {
     console.log('Players fetched successfully', players);
     res.json(players);
   } catch (err) {
-    console.error('Error fetching players', err);
     res.status(500).json({ error: 'Failed to fetch players' });
   }
 };
@@ -79,7 +76,6 @@ exports.startGame = async (req, res) => {
 
     res.json({ message: 'Game started', gameMode: gameMode || 'online' });
   } catch (err) {
-    console.error('Error starting game', err);
     res.status(500).json({ error: 'Failed to start game' });
   }
 };
@@ -96,7 +92,6 @@ exports.getPlayerWord = async (req, res) => {
 
     res.json({ word: player.word, role: player.role });
   } catch (err) {
-    console.error('Error fetching player word/role:', err);
     res.status(500).json({ error: 'Failed to fetch player data' });
   }
 };

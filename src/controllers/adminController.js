@@ -1,7 +1,6 @@
-const db = require('../config/db');
-
 //ADMIN LOG
 exports.getActionLogs = async (req, res) => {
+  const db = require('../config/db');
   const { gameCode } = req.params;
 
   if (!gameCode) {

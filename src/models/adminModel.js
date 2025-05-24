@@ -1,7 +1,6 @@
-const db = require('../config/db');
-
 const logAction = async (userId, actionType, details = null, gameCode = null) => {
   try {
+    const db = require('../config/db');
     const pool = await db.poolPromise;
     await pool.request()
       .input('userId', db.sql.VarChar, userId)
