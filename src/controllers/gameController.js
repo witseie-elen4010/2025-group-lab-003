@@ -71,6 +71,10 @@ exports.startGame = async (req, res) => {
       console.log(`Game mode for game ${gameCode} set to ${gameMode}`);
     }
 
+    // Mark the game as started in the database
+    await gameModel.startGame(gameCode);
+    console.log(`Game ${gameCode} marked as started in database`);
+
     // Log this action
     await logAction(playerName, 'START_GAME', `Started game ${gameCode} with mode ${gameMode}`, gameCode);
 
@@ -178,54 +182,22 @@ async function eliminatePlayer(gameCode, round, io) {
   });
 
   console.log(`Player ${eliminatedPlayer.userId} eliminated. Role: ${eliminatedPlayerRole.role}`);
-
-  // Check game ending conditions
   if (eliminatedPlayerRole.role === 'undercover') {
-    console.log(`Total players: ${totalPlayers}`);
-    console.log(`Remaining civilians: ${remainingCivilians.length}`);
-    console.log(`Remaining undercover: ${remainingUndercover.length}`);
-    // Undercover eliminated → Game ends, civilians win
+    // Impostor eliminated → Game ends, civilians win
     await gameModel.endGame(gameCode, 'civilian');
-    io.to(gameCode).emit('gameEnded', { winner: 'civilian' });
-  } else if (remainingCivilians.length === 1 && remainingUndercover.length === 1) {
-    console.log('Special case: 1 civilian vs 1 undercover');
-    // Special case: 1 civilian vs 1 undercover → undercover wins
-    await gameModel.endGame(gameCode, 'undercover');
-    io.to(gameCode).emit('gameEnded', { winner: 'undercover' });
-  } else if (remainingCivilians.length === 0) {
-    console.log(`Total players: ${totalPlayers}`);
-    console.log(`Remaining civilians: ${remainingCivilians.length}`);
-    console.log(`Remaining undercover: ${remainingUndercover.length}`);
-    console.log('No civilians left');
-    // No civilians left → undercover wins
-    await gameModel.endGame(gameCode, 'undercover');
-    io.to(gameCode).emit('gameEnded', { winner: 'undercover' });
-  } else if (remainingUndercover.length === 0) {
-    console.log(`Total players: ${totalPlayers}`);
-    console.log(`Remaining civilians: ${remainingCivilians.length}`);
-    console.log(`Remaining undercover: ${remainingUndercover.length}`);
-    console.log('No undercover left');
-    // No undercover left → civilians win
-    await gameModel.endGame(gameCode, 'civilian');
+    console.log(`Emitting gameEnded event to room ${gameCode} - winner: civilian`);
     io.to(gameCode).emit('gameEnded', { winner: 'civilian' });
   } else {
-    console.log(`Total players: ${totalPlayers}`);
-    console.log(`Remaining civilians: ${remainingCivilians.length}`);
-    console.log(`Remaining undercover: ${remainingUndercover.length}`);
-    // Continue to next round
+    // Civilian eliminated → Start next round
     await gameModel.incrementRound(gameCode);
     await gameModel.assignNewWords(gameCode);
 
-    const currentRound = await gameModel.getCurrentRound(gameCode);
+      const currentRound = await gameModel.getCurrentRound(gameCode);
 
-    console.log(`Total players: ${totalPlayers}`);
-    console.log(`Remaining civilians: ${remainingCivilians.length}`);
-    console.log(`Remaining undercover: ${remainingUndercover.length}`);
-
-    io.to(gameCode).emit('newRoundStarted', {
-      round: currentRound,
-      eliminatedPlayer: eliminatedPlayer.userId
-    });
+    // Notify players to reload the game page with new round info
+    io.to(gameCode).emit('newRoundStarted', { 
+      round: currentRound, 
+      eliminatedPlayer: eliminatedPlayer.userId });
   }
 
   return eliminatedPlayer.userId;
@@ -271,6 +243,26 @@ exports.getGameMode = async (req, res) => {
   } catch (err) {
     console.error('Failed to fetch game mode', err);
     res.status(500).json({ error: 'Failed to fetch game mode' });
+  }
+};
+
+exports.getGameStatus = async (req, res) => {
+  const { gameCode } = req.params;
+  try {
+    const gameState = await gameModel.getGameState(gameCode);
+    if (!gameState) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+
+    res.json({
+      gameStarted: gameState.gameStarted === 1,
+      gameMode: gameState.mode || 'online',
+      round: gameState.round,
+      winner: gameState.winner
+    });
+  } catch (err) {
+    console.error('Error fetching game status:', err);
+    res.status(500).json({ error: 'Failed to fetch game status' });
   }
 };
 

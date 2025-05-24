@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const gameCode = params.get('gameCode');
 
       if (!gameCode) {
-        alert('Game code missing. Cannot show results.');
+        showErrorNotification('Game code missing. Cannot show results.');
         return;
       }
 

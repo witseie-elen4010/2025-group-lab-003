@@ -3,7 +3,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const gameCode = params.get('gameCode');
 
   if (!gameCode) {
-    alert('Game code missing. Cannot load results.');
+    showErrorNotification('Game code missing. Cannot load results.');
     return;
   }
 
@@ -30,7 +30,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       });
     }
   } catch (err) {
-    alert(err.message);
+    showErrorNotification(err.message);
     console.error(err);
     document.getElementById('winnerSide').textContent = 'Error loading results';
     document.getElementById('roundsPlayed').textContent = 'Error loading results';

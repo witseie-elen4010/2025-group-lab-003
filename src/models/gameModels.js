@@ -391,7 +391,7 @@ exports.getGameState = async (gameCode) => {
   const pool = await db.poolPromise;
   const result = await pool.request()
     .input('gameCode', db.sql.VarChar, gameCode)
-    .query(`SELECT winner, round FROM GameState WHERE gameCode = @gameCode`);
+    .query(`SELECT winner, round, gameStarted, mode FROM GameState WHERE gameCode = @gameCode`);
   return result.recordset[0];
 };
 
@@ -402,6 +402,16 @@ exports.getPlayersWithRoles = async (gameCode) => {
   const result = await pool.request()
     .input('gameCode', db.sql.VarChar, gameCode)
     .query(`SELECT userId, role FROM Players WHERE gameCode = @gameCode`);
+  return result.recordset;
+};
+
+// Get active players with their roles
+exports.getActivePlayers = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT userId, role, status FROM Players WHERE gameCode = @gameCode AND status = 'active'`);
   return result.recordset;
 };
 

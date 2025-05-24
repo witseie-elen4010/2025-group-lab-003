@@ -50,7 +50,7 @@ app.get('/winner.html', (req, res) => {
 app.get('/eliminated.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'eliminated.html'));
 });
-  
+
 // API routes
 const gameRoutes = require('./routes/gameRoutes');
 app.use('/api/game', gameRoutes);
@@ -58,7 +58,7 @@ app.use('/api/game', gameRoutes);
 //RESULTS
 app.get('/gameResults.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'gameResults.html'));
-}); 
+});
 app.use('/api/game', gameRoutes);
 
 // Create HTTP server and attach Socket.IO
@@ -77,7 +77,7 @@ const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
 app.get('/adminLogs.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'adminLogs.html'));
-}); 
+});
 
 
 // ------------------------------- SOCKET CODE ------------------------------------------------------------------------------------
@@ -87,14 +87,30 @@ io.on('connection', (socket) => {
   console.log('A user connected');
 
   socket.on('joinGame', async (gameCode, playerName, gameMode) => {
-  console.log(`${playerName} joined game: ${gameCode}`);
+  console.log(`${playerName} joined socket room for game: ${gameCode}`);
+
+  // Join the socket room
   socket.join(gameCode);
 
-  // Fetch updated player list for this game
-  const players = await gameModel.getPlayersByGameCode(gameCode); 
+  // Store player info on the socket for debugging
+  socket.playerName = playerName;
+  socket.gameCode = gameCode;
 
-  // Broadcast updated player list to everyone in the room
-  io.to(gameCode).emit('updatePlayerList', players);
+  // Fetch updated player list for this game
+  try {
+    const players = await gameModel.getPlayersByGameCode(gameCode);
+    console.log(`Player ${playerName} joined room ${gameCode}. Total players in DB: ${players.length}`);
+
+    // Broadcast updated player list to everyone in the room
+    io.to(gameCode).emit('updatePlayerList', players);
+
+    // Confirm the player joined the socket room
+    socket.emit('joinedRoom', { gameCode, playerName, success: true });
+
+  } catch (err) {
+    console.error(`Error handling joinGame for ${playerName} in ${gameCode}:`, err);
+    socket.emit('joinedRoom', { gameCode, playerName, success: false, error: err.message });
+  }
 });
 
 
@@ -112,7 +128,7 @@ io.on('connection', (socket) => {
       console.error('Failed to check game mode:', err);
     }
     if (mode === 'inperson') return; // Ignore chat in in-person mode
-    
+
     // Get current round from DB(NEED TO IMPLEMENT)
     // For now, we'll just assume round 1
     let round = 1;
@@ -136,7 +152,23 @@ io.on('connection', (socket) => {
     console.error('Failed to fetch game mode for started game:', err);
   }
 
-  io.to(gameCode).emit('gameStarted', { gameMode: mode });
+  // Get all players in the game to ensure we're notifying everyone
+  try {
+    const players = await gameModel.getPlayersByGameCode(gameCode);
+    console.log(`Notifying ${players.length} players in game ${gameCode} that game has started`);
+
+    // Emit to the room
+    io.to(gameCode).emit('gameStarted', { gameMode: mode });
+
+    // Also emit to all connected sockets as a backup
+    const sockets = await io.in(gameCode).fetchSockets();
+    console.log(`Found ${sockets.length} connected sockets in room ${gameCode}`);
+
+  } catch (err) {
+    console.error('Error getting players for game start notification:', err);
+    // Still try to emit the event
+    io.to(gameCode).emit('gameStarted', { gameMode: mode });
+  }
 });
 
 

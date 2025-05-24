@@ -46,9 +46,15 @@ async function createGame() {
       creatorName = playerName;
       gameCode = data.gameCode;
 
-      alert('Game created! Game Code: ' + data.gameCode);
+      showSuccessNotification('Game created! Game Code: ' + data.gameCode, {
+        title: '🎮 Game Created',
+        duration: 5000
+      });
 
       socket.emit('joinGame', gameCode, playerName);
+
+      // Start polling for game start as a fallback
+      startGameStartPolling();
 
       document.getElementById('lobbySection').classList.remove('d-none');
 
@@ -59,13 +65,10 @@ async function createGame() {
       throw new Error(errorData.error || 'Failed to create game');
     }
   } catch (e) {
-    const errorDisplay = document.getElementById('errorDisplay');
-    errorDisplay.innerText = e.message;
-    errorDisplay.classList.remove('d-none'); // Show the alert
     console.error('Game creation error:', e.message);
-    setTimeout(() => {
-      errorDisplay.classList.add('d-none');
-    }, 4000);
+    showErrorNotification(e.message, {
+      title: '❌ Game Creation Failed'
+    });
   }
 }
 
@@ -99,11 +102,17 @@ async function joinGame() {
     });
 
     if (res.ok) {
-      alert(`Joined game ${gameCode} successfully!`);
+      showSuccessNotification(`Joined game ${gameCode} successfully!`, {
+        title: '🎮 Game Joined',
+        duration: 3000
+      });
       document.getElementById('lobbySection').classList.remove('d-none');
       document.getElementById('gameCodeInput').classList.remove('d-none');
       // Tell backend we joined the game room
       socket.emit('joinGame', gameCode, playerName);
+
+      // Start polling for game start as a fallback
+      startGameStartPolling();
 
       //await loadLobby(gameCode); // Initial load
     } else {
@@ -111,13 +120,10 @@ async function joinGame() {
       throw new Error(errorData.error || 'Failed to join game');
     }
   } catch (err) {
-    const errorDisplay = document.getElementById('errorDisplay');
-    errorDisplay.innerText = err.message;
-    errorDisplay.classList.remove('d-none');
     console.error('Join game error:', err.message);
-    setTimeout(() => {
-      errorDisplay.classList.add('d-none');
-    }, 4000);
+    showErrorNotification(err.message, {
+      title: '❌ Failed to Join Game'
+    });
   }
 }
 
@@ -133,7 +139,11 @@ async function startGame() {
     });
 
     if (res.ok) {
-      alert('Game started!');
+      showGameNotification('Game started!', {
+        title: '🎲 Game Starting',
+        type: 'success',
+        duration: 3000
+      });
       socket.emit('startGame', gameCode);
     } else {
       const errorData = await res.json();
@@ -141,7 +151,7 @@ async function startGame() {
     }
   } catch (err) {
     console.error('Start game error:', err.message);
-    alert('Could not start game.');
+    showErrorNotification('Could not start game.');
   }
 }
 
@@ -152,10 +162,86 @@ socket.on('playerJoined', (joinedPlayerName) => {
 });
 
 socket.on('gameStarted', (data) => {
-  alert('Game has started!');
-  // Redirect with gameMode sent from backend
-  window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}&mode=${data.gameMode}`;
+  console.log('Received gameStarted event:', data);
+  showGameNotification('Game has started! Redirecting to game...', {
+    title: '🎮 Game Started',
+    type: 'success',
+    duration: 1500
+  });
+
+  // Stop polling since we received the socket event
+  stopGameStartPolling();
+
+  // Automatically redirect all players to the game page after a short delay
+  setTimeout(() => {
+    console.log('Redirecting to game page...');
+    window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}&mode=${data.gameMode}`;
+  }, 1500);
 });
+
+// Add a fallback mechanism - listen for room join confirmation
+socket.on('joinedRoom', (data) => {
+  console.log('Joined room confirmation:', data);
+  if (!data.success) {
+    console.error('Failed to join socket room:', data.error);
+    showErrorNotification('Failed to connect to game room. Please refresh and try again.');
+  }
+});
+
+// Add connection status monitoring
+socket.on('connect', () => {
+  console.log('Socket connected');
+});
+
+socket.on('disconnect', () => {
+  console.log('Socket disconnected');
+});
+
+socket.on('connect_error', (error) => {
+  console.error('Socket connection error:', error);
+});
+
+// Polling fallback to check if game has started (in case socket events fail)
+let gameStartPolling = null;
+
+function startGameStartPolling() {
+  if (gameStartPolling) return; // Already polling
+
+  gameStartPolling = setInterval(async () => {
+    if (!gameCode) return;
+
+    try {
+      const res = await fetch(`/api/game/status/${gameCode}`);
+      if (res.ok) {
+        const status = await res.json();
+        if (status.gameStarted && !status.redirected) {
+          console.log('Game started detected via polling, redirecting...');
+          clearInterval(gameStartPolling);
+          gameStartPolling = null;
+
+          showGameNotification('Game has started! Redirecting to game...', {
+            title: '🎮 Game Started',
+            type: 'success',
+            duration: 1000
+          });
+
+          setTimeout(() => {
+            window.location.href = `/game.html?gameCode=${gameCode}&playerName=${playerName}&mode=${status.gameMode || 'online'}`;
+          }, 1000);
+        }
+      }
+    } catch (err) {
+      console.error('Error polling game status:', err);
+    }
+  }, 2000); // Check every 2 seconds
+}
+
+function stopGameStartPolling() {
+  if (gameStartPolling) {
+    clearInterval(gameStartPolling);
+    gameStartPolling = null;
+  }
+}
 
 // Listen for updated player list
 socket.on('updatePlayerList', async (players) => {

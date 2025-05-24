@@ -4,8 +4,15 @@ window.addEventListener('DOMContentLoaded', async () => {
   const gameCode = params.get('gameCode');
 
   if (!playerName || !gameCode) {
-    alert("Missing gameCode or playerName");
-    return window.location.href = '/';
+    showErrorNotification("Missing gameCode or playerName. Redirecting to lobby...", {
+      duration: 3000
+    });
+
+    // Automatically redirect to lobby
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 3000);
+    return;
   }
 
   // Admin check
@@ -14,8 +21,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     const { admin } = await res.json();
 
     if (!admin) {
-      alert("Access denied. You are not the admin.");
-      return window.location.href = '/';
+      showErrorNotification("Access denied. You are not the admin. Redirecting to lobby...", {
+        duration: 3000
+      });
+
+      // Automatically redirect to lobby
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
+      return;
     }
   } catch (err) {
     console.error('Failed to check admin:', err);
