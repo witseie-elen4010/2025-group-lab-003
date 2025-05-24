@@ -24,6 +24,8 @@ jobs:
           node-version: '22.x'
 
       - name: npm install, build, and test
+        env:
+          INCOGNITO_CONNECTION_STRING: ${{ secrets.INCOGNITO_CONNECTION_STRING }}
         run: |
           npm install
           npm run build --if-present
