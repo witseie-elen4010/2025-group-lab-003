@@ -163,12 +163,12 @@ window.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('playerWord').textContent = data.word;
         //document.getElementById('playerRole').textContent = `Your role: ${data.role}`;
 
-        /*// Show notification that description phase will start soon
+        // Show notification that description phase will start soon
         showGameNotification('Get ready! Description phase will start in 10 seconds. Each player gets 1 minute to describe their word.', {
           title: '⏰ Description Phase Starting Soon',
           type: 'info',
           duration: 8000
-        });*/
+        });
       } else {
         document.getElementById('playerWord').textContent = data.error || 'Could not load your word.';
         //document.getElementById('playerRole').textContent = 'Unknown role';
@@ -249,6 +249,7 @@ socket.on('chatMessage', ({ playerName, message }) => {
 function sendChat() {
   const chatInput = document.getElementById('chatInput');
   const message = chatInput.value.trim();
+
   if (message) {
     socket.emit('chatMessage', { gameCode, playerName, message });
     chatInput.value = '';
@@ -256,7 +257,21 @@ function sendChat() {
 }
 
 document.getElementById('chatInput').addEventListener('keydown', function(e) {
+  // Prevent all typing during description phase when it's not player's turn
+  if (gamePhase === 'description' && currentSpeaker !== playerName) {
+    e.preventDefault();
+    return false;
+  }
+
   if (e.key === 'Enter') sendChat();
+});
+
+// Also prevent paste events when it's not player's turn
+document.getElementById('chatInput').addEventListener('paste', function(e) {
+  if (gamePhase === 'description' && currentSpeaker !== playerName) {
+    e.preventDefault();
+    return false;
+  }
 });
 
 // Discussion Phase Socket Events
@@ -377,23 +392,30 @@ function updateSpeakerDisplay(speaker, index, total) {
 }
 
 function updateChatAccess() {
+  console.log('updateChatAccess called - gamePhase:', gamePhase, 'currentSpeaker:', currentSpeaker, 'playerName:', playerName);
   const chatInput = document.getElementById('chatInput');
   const sendButton = document.querySelector('#chatCard button');
 
   if (gamePhase === 'description') {
     document.getElementById('startVoteBtn').style.display = 'none';
     document.getElementById('voteList').style.display = 'none';
+
     // Only current speaker can type during description phase
     const canSpeak = (currentSpeaker === playerName);
     chatInput.disabled = !canSpeak;
+    chatInput.readOnly = !canSpeak; // Prevent typing completely
     if (sendButton) sendButton.disabled = !canSpeak;
 
     if (canSpeak) {
       chatInput.placeholder = "Describe your word (avoid saying it directly)...";
       chatInput.className = 'form-control me-2 border-success';
+      chatInput.style.cursor = 'text';
+      chatInput.style.backgroundColor = '';
     } else {
-      chatInput.placeholder = `${currentSpeaker} is describing their word...`;
-      chatInput.className = 'form-control me-2';
+      chatInput.placeholder = "Wait up until your turn to type";
+      chatInput.className = 'form-control me-2 bg-light text-muted';
+      chatInput.style.cursor = 'not-allowed';
+      chatInput.style.backgroundColor = '#f8f9fa';
     }
   } else if (gamePhase === 'discussion') {
     document.getElementById('timeRemaining').style.display = 'none';
@@ -404,17 +426,24 @@ function updateChatAccess() {
 
     // Everyone can chat during discussion phase
     chatInput.disabled = false;
+    chatInput.readOnly = false;
     if (sendButton) sendButton.disabled = false;
     chatInput.placeholder = "Ask questions and discuss...";
     chatInput.className = 'form-control me-2 border-primary';
+    chatInput.style.cursor = 'text';
+    chatInput.style.backgroundColor = '';
   } else {
     document.getElementById('startVoteBtn').style.display = 'block';
     document.getElementById('voteList').style.display = 'block';
+
     // Default state (waiting/voting)
     chatInput.disabled = false;
+    chatInput.readOnly = false;
     if (sendButton) sendButton.disabled = false;
     chatInput.placeholder = "Type a message...";
     chatInput.className = 'form-control me-2';
+    chatInput.style.cursor = 'text';
+    chatInput.style.backgroundColor = '';
   }
 }
 

@@ -130,6 +130,19 @@ io.on('connection', (socket) => {
     }
     if (mode === 'inperson') return; // Ignore chat in in-person mode
 
+    // Import the description phase functions to check current speaker
+    const { activeDescriptionPhases } = require('./controllers/gameController');
+
+    // Check if we're in description phase and if this player can speak
+    const phaseData = activeDescriptionPhases.get(gameCode);
+    if (phaseData) {
+      const currentSpeaker = phaseData.players[phaseData.currentSpeakerIndex];
+      if (currentSpeaker !== playerName) {
+        console.log(`Blocked chat from ${playerName} - not their turn (current speaker: ${currentSpeaker})`);
+        return; // Don't allow non-speakers to chat during description phase
+      }
+    }
+
     // Get current round from DB(NEED TO IMPLEMENT)
     // For now, we'll just assume round 1
     let round = 1;
@@ -165,15 +178,8 @@ io.on('connection', (socket) => {
     const sockets = await io.in(gameCode).fetchSockets();
     console.log(`Found ${sockets.length} connected sockets in room ${gameCode}`);
 
-    // Import the description phase function
-    const { startDescribingPhase } = require('./controllers/gameController');
-
-    // Automatically start description phase 10 seconds after game starts
-    console.log(`Scheduling description phase for game ${gameCode} to start in 10 seconds (via socket)`);
-    setTimeout(() => {
-      console.log(`Starting automatic description phase for game ${gameCode} (via socket)`);
-      startDescribingPhase(gameCode, io);
-    }, 10000); // 10 seconds delay
+    // Note: Description phase is triggered by HTTP route, not socket event
+    // This prevents duplicate triggers
 
   } catch (err) {
     console.error('Error getting players for game start notification:', err);

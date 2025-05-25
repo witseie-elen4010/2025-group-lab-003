@@ -315,9 +315,10 @@ function startPlayerTurn(gameCode, io) {
   const phaseData = activeDescriptionPhases.get(gameCode);
   if (!phaseData) return;
 
-  // Clear existing timer if running
+  // Clear existing timer if running to prevent conflicts
   if (phaseData.timer) {
     clearInterval(phaseData.timer);
+    phaseData.timer = null;
   }
 
   const currentSpeaker = phaseData.players[phaseData.currentSpeakerIndex];
@@ -336,10 +337,7 @@ function startPlayerTurn(gameCode, io) {
   let timeLeft = phaseData.speakerDuration;
 
   phaseData.timer = setInterval(() => {
-    if (timeLeft > 0) {
-      timeLeft--;
-    }
-
+    // Send timer update first
     io.to(gameCode).emit('timerUpdate', {
       timeLeft,
       maxTime: phaseData.speakerDuration,
@@ -349,7 +347,11 @@ function startPlayerTurn(gameCode, io) {
       phase: 'description'
     });
 
-  if (timeLeft <= 0) {
+    // Decrement time after sending update
+    timeLeft--;
+
+    // Check if time is up
+    if (timeLeft < 0) {
       clearInterval(phaseData.timer);
       phaseData.timer = null;
       moveToNextPlayer(gameCode, io);
@@ -374,23 +376,19 @@ function moveToNextPlayer(gameCode, io) {
     // Start discussion phase
     startDiscussionPhase(gameCode, io);
   } else {
-    // Move to next player
+    // Move to next player immediately without nested timeouts
     const nextSpeaker = phaseData.players[phaseData.currentSpeakerIndex];
     console.log(`Moving to next speaker: ${nextSpeaker}`);
 
-    // Brief pause before next player starts
-    setTimeout(() => {
-      io.to(gameCode).emit('nextSpeaker', {
-        currentSpeaker: nextSpeaker,
-        speakerIndex: phaseData.currentSpeakerIndex,
-        totalSpeakers: phaseData.players.length,
-      });
+    // Emit next speaker event and start their turn immediately
+    io.to(gameCode).emit('nextSpeaker', {
+      currentSpeaker: nextSpeaker,
+      speakerIndex: phaseData.currentSpeakerIndex,
+      totalSpeakers: phaseData.players.length,
+    });
 
-      // Start the next player's turn after a short delay
-      setTimeout(() => {
-        startPlayerTurn(gameCode, io);
-      }, 2000); // 2 second transition time
-    }, 1000);
+    // Start the next player's turn immediately
+    startPlayerTurn(gameCode, io);
   }
 }
 
@@ -444,9 +442,10 @@ exports.testDescriptionPhase = async (req, res) => {
   }
 };
 
-// Export the description phase functions for testing
+// Export the description phase functions and data for testing and server access
 module.exports.startDescribingPhase = startDescribingPhase;
 module.exports.startDiscussionPhase = startDiscussionPhase;
+module.exports.activeDescriptionPhases = activeDescriptionPhases;
 
 
 
