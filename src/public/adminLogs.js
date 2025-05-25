@@ -4,9 +4,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   const gameCode = params.get('gameCode');
 
   if (!playerName || !gameCode) {
-    showErrorNotification("Missing gameCode or playerName. Redirecting to lobby...", {
-      duration: 3000
-    });
+    showErrorNotification(
+      'Missing gameCode or playerName. Redirecting to lobby...',
+      {
+        duration: 3000,
+      }
+    );
 
     // Automatically redirect to lobby
     setTimeout(() => {
@@ -21,9 +24,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     const { admin } = await res.json();
 
     if (!admin) {
-      showErrorNotification("Access denied. You are not the admin. Redirecting to lobby...", {
-        duration: 3000
-      });
+      showErrorNotification(
+        'Access denied. You are not the admin. Redirecting to lobby...',
+        {
+          duration: 3000,
+        }
+      );
 
       // Automatically redirect to lobby
       setTimeout(() => {
@@ -43,7 +49,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     tableBody.innerHTML = '';
 
     if (!logs.length) {
-      tableBody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No logs found.</td></tr>';
+      tableBody.innerHTML =
+        '<tr><td colspan="5" class="text-muted text-center">No logs found.</td></tr>';
       return;
     }
 
@@ -60,6 +67,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   } catch (err) {
     console.error('Error loading logs:', err);
-    document.getElementById('logTableBody').innerHTML = `<tr><td colspan="5" class="text-danger text-center">${err.message}</td></tr>`;
+    document.getElementById('logTableBody').innerHTML =
+      `<tr><td colspan="5" class="text-danger text-center">${err.message}</td></tr>`;
   }
 });

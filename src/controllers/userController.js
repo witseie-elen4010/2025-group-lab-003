@@ -50,17 +50,17 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign(
-    { userId: user.id, email: user.email },
-    JWT_SECRET,
-    { expiresIn: '1h' }  // set token expiration time here
-  );
-      res.json({
+      { userId: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '1h' } // set token expiration time here
+    );
+    res.json({
       token,
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
   } catch (err) {
     console.error('Login error:', err);

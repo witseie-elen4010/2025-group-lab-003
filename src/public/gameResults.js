@@ -13,16 +13,19 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     const data = await res.json();
 
-    document.getElementById('winnerSide').textContent = data.winnerSide || 'Unknown';
-    document.getElementById('roundsPlayed').textContent = data.roundsPlayed ?? 'Unknown';
+    document.getElementById('winnerSide').textContent =
+      data.winnerSide || 'Unknown';
+    document.getElementById('roundsPlayed').textContent =
+      data.roundsPlayed ?? 'Unknown';
 
     const playersList = document.getElementById('playersList');
     playersList.innerHTML = '';
 
     if (data.players.length === 0) {
-      playersList.innerHTML = '<li class="list-group-item">No players found.</li>';
+      playersList.innerHTML =
+        '<li class="list-group-item">No players found.</li>';
     } else {
-      data.players.forEach(player => {
+      data.players.forEach((player) => {
         const li = document.createElement('li');
         li.className = 'list-group-item';
         li.textContent = `${player.userId} — ${player.role}`;
@@ -33,7 +36,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     showErrorNotification(err.message);
     console.error(err);
     document.getElementById('winnerSide').textContent = 'Error loading results';
-    document.getElementById('roundsPlayed').textContent = 'Error loading results';
-    document.getElementById('playersList').innerHTML = '<li class="list-group-item text-danger">Error loading players.</li>';
+    document.getElementById('roundsPlayed').textContent =
+      'Error loading results';
+    document.getElementById('playersList').innerHTML =
+      '<li class="list-group-item text-danger">Error loading players.</li>';
   }
 });

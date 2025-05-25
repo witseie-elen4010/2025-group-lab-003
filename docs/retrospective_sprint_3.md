@@ -6,10 +6,10 @@ Sprint 3 focused on advancing the game flow beyond voting and starting rounds to
 
 The key goals for this sprint were:
 
-1. Implement **elimination logic** triggered once all votes are cast.  
-2. Correctly determine if the **undercover player is eliminated** and end the game accordingly.  
-3. Notify players of eliminations and **redirect eliminated players** to a dedicated screen.  
-4. Handle **end game notifications** and redirect winners/losers to their respective pages.  
+1. Implement **elimination logic** triggered once all votes are cast.
+2. Correctly determine if the **undercover player is eliminated** and end the game accordingly.
+3. Notify players of eliminations and **redirect eliminated players** to a dedicated screen.
+4. Handle **end game notifications** and redirect winners/losers to their respective pages.
 5. Continue refining real-time communication using WebSockets.
 
 ---
@@ -17,18 +17,22 @@ The key goals for this sprint were:
 ## ✅ What Was Completed
 
 ### 1. **Elimination Logic**
+
 - Successfully implemented backend elimination logic which identifies the player with the highest votes and marks them as eliminated.
 - Incorporated role checking to determine whether the eliminated player was the undercover, triggering game end or starting the next round accordingly.
 
 ### 2. **Real-Time Notifications**
+
 - WebSocket events were integrated to broadcast elimination and game end events in real-time.
 - Players receive immediate feedback when they are eliminated, including redirection to the elimination screen.
 
 ### 3. **Game End Handling**
+
 - Implemented logic to distinguish the winning side ("undercover" or "civilian") and broadcast game end events.
 - Clients redirect winners and losers to appropriate pages with consistent styling and messaging.
 
 ### 4. **UI/UX Improvements**
+
 - Eliminated players are redirected to a dedicated page that informs them of their status.
 - Round transitions trigger alerts and page reloads with updated words and information.
 
@@ -64,27 +68,33 @@ The key goals for this sprint were:
 ## 🔧 Areas for Improvement
 
 ### 1. **Testing**
+
 - Implement thorough **unit tests** and **integration tests** for all new backend features, especially around elimination and game state transitions.
 - Add **end-to-end (E2E) tests** to simulate full game flow, including voting, elimination, and game completion.
 
 ### 2. **WebSocket Management**
+
 - Improve WebSocket event handling to prevent duplicated event listeners or multiple emits.
 - Handle reconnections and ensure the game state syncs properly on client reconnects.
 
 ### 3. **UX Enhancements**
+
 - Finalize the **player activity log** for game summary and replay.
 - Enhance start game controls, potentially restricting start privileges to the game creator/admin.
 
 ### 4. **Performance and Scalability**
+
 - Optimize SQL queries and database indexing to handle increased load as player count and concurrent games grow.
 - Consider adding caching layers or message queues for large-scale WebSocket broadcasting.
 
 ### 5. **Pull Request Workflow**
+
 - Establish a standard for meaningful and consistent pull requests.
 - Ensure all code contributions go through a proper review process on GitHub.
 - Moving forward, the team commits to using pull requests for all new features, bug fixes, and refactors, even if development occurs collaboratively in person.
 
 ### 6. **Restore Vote Elimination**
+
 - Prioritize debugging and restoring vote elimination functionality affected by the new login/signup integration.
 - Ensure core gameplay mechanics work flawlessly before adding additional features.
 
@@ -95,4 +105,3 @@ The key goals for this sprint were:
 Sprint 3 marked a major milestone in delivering a smooth, real-time game experience for the **Incognito Game** by adding elimination mechanics and clear game ending processes. Although some features like player logs, comprehensive testing, proper pull request habits, and vote elimination stability were not fully achieved, the core gameplay loop now functions with real-time player feedback, enabling competitive and engaging rounds.
 
 Going forward, the team will focus on polishing edge cases, implementing robust test suites, enhancing the user interface, adopting consistent GitHub workflows, and restoring critical gameplay functionality to ensure a reliable and maintainable codebase.
-

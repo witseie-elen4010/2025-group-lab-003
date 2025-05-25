@@ -13,12 +13,17 @@ exports.createGame = async (req, res) => {
     await gameModel.joinGame(creatorName, gameCode);
 
     // Log this action
-    await logAction(creatorName, 'CREATE_GAME', `Game code: ${gameCode}`, gameCode);
+    await logAction(
+      creatorName,
+      'CREATE_GAME',
+      `Game code: ${gameCode}`,
+      gameCode
+    );
 
     console.log('Game created and creator joined successfully', gameCode);
     res.json({ message: 'Game created successfully', gameCode });
   } catch (err) {
-   //console.error('Create game error:', err);
+    //console.error('Create game error:', err);
     res.status(500).json({ error: 'Error creating game' });
   }
 };
@@ -32,9 +37,16 @@ exports.joinGame = async (req, res) => {
 
   try {
     // Check if player already in game
-    const existingPlayer = await gameModel.getPlayerByNameAndGameCode(name, gameCode);
+    const existingPlayer = await gameModel.getPlayerByNameAndGameCode(
+      name,
+      gameCode
+    );
     if (existingPlayer) {
-      return res.status(400).json({ error: 'Player has already joined this game. Try a different name.' });
+      return res
+        .status(400)
+        .json({
+          error: 'Player has already joined this game. Try a different name.',
+        });
     }
 
     await gameModel.joinGame(name, gameCode);
@@ -50,7 +62,6 @@ exports.joinGame = async (req, res) => {
     res.status(500).json({ error: 'Failed to join game' });
   }
 };
-
 
 exports.getPlayers = async (req, res) => {
   const gameCode = req.params.gameCode;
@@ -72,7 +83,6 @@ exports.startGame = async (req, res) => {
   }
 
   try {
-
     await gameModel.assignRoles(gameCode);
     const round = await gameModel.getCurrentRound(gameCode);
     await gameModel.assignWordsForRound(gameCode, round);
@@ -88,13 +98,20 @@ exports.startGame = async (req, res) => {
     console.log(`Game ${gameCode} marked as started in database`);
 
     // Log this action
-    await logAction(playerName, 'START_GAME', `Started game ${gameCode} with mode ${gameMode}`, gameCode);
+    await logAction(
+      playerName,
+      'START_GAME',
+      `Started game ${gameCode} with mode ${gameMode}`,
+      gameCode
+    );
 
     // Get the io instance to trigger description phase
     const io = req.app.get('io');
 
     // Automatically start description phase 10 seconds after game starts
-    console.log(`Scheduling description phase for game ${gameCode} to start in 10 seconds`);
+    console.log(
+      `Scheduling description phase for game ${gameCode} to start in 10 seconds`
+    );
     setTimeout(() => {
       console.log(`Starting automatic description phase for game ${gameCode}`);
       startDescribingPhase(gameCode, io);
@@ -106,12 +123,14 @@ exports.startGame = async (req, res) => {
   }
 };
 
-
 exports.getPlayerWord = async (req, res) => {
   const { gameCode, playerName } = req.params;
 
   try {
-    const player = await gameModel.getPlayerByNameAndGameCode(playerName, gameCode);
+    const player = await gameModel.getPlayerByNameAndGameCode(
+      playerName,
+      gameCode
+    );
     if (!player) {
       return res.status(404).json({ error: 'Player not found' });
     }
@@ -134,7 +153,9 @@ exports.submitVote = async (req, res) => {
     const revoteState = activeRevotes.get(gameCode);
     if (revoteState) {
       if (!revoteState.eligibleVoters.includes(voterName)) {
-        return res.status(403).json({ error: 'You are not eligible to vote in this revote' });
+        return res
+          .status(403)
+          .json({ error: 'You are not eligible to vote in this revote' });
       }
     }
 
@@ -145,7 +166,12 @@ exports.submitVote = async (req, res) => {
     await gameModel.recordVote(gameCode, round, voterId, targetId);
 
     // Log this action
-    await logAction(voterName, 'VOTE', `Voted for ${votedFor} in game ${gameCode}`, gameCode);
+    await logAction(
+      voterName,
+      'VOTE',
+      `Voted for ${votedFor} in game ${gameCode}`,
+      gameCode
+    );
 
     console.log(`Vote recorded: ${voterName} voted for ${votedFor}`);
 
@@ -155,14 +181,22 @@ exports.submitVote = async (req, res) => {
 
     if (currentRevoteState && currentRevoteState.round === round) {
       // We're in a revote - only check eligible voters
-      console.log(`Checking revote votes for eligible voters: ${currentRevoteState.eligibleVoters.join(', ')}`);
-      allVotesIn = await gameModel.haveEligibleVotersVoted(gameCode, round, currentRevoteState.eligibleVoters);
+      console.log(
+        `Checking revote votes for eligible voters: ${currentRevoteState.eligibleVoters.join(', ')}`
+      );
+      allVotesIn = await gameModel.haveEligibleVotersVoted(
+        gameCode,
+        round,
+        currentRevoteState.eligibleVoters
+      );
     } else {
       // Normal voting - check all active players
       allVotesIn = await gameModel.haveAllPlayersVoted(gameCode, round);
     }
 
-    console.log(`All votes in check: ${allVotesIn} for game ${gameCode}, round ${round}`);
+    console.log(
+      `All votes in check: ${allVotesIn} for game ${gameCode}, round ${round}`
+    );
 
     if (allVotesIn) {
       console.log(`All votes are in for round ${round} in game ${gameCode}`);
@@ -174,13 +208,17 @@ exports.submitVote = async (req, res) => {
       }
 
       const io = req.app.get('io');
-      io.to(gameCode).emit('allVotesIn',  { message: 'All votes are in!' });
+      io.to(gameCode).emit('allVotesIn', { message: 'All votes are in!' });
 
       // Call elimination logic
       try {
-        console.log(`Starting elimination process for game ${gameCode}, round ${round}`);
+        console.log(
+          `Starting elimination process for game ${gameCode}, round ${round}`
+        );
         const eliminatedUserId = await eliminatePlayer(gameCode, round, io);
-        console.log(`Elimination result: ${eliminatedUserId ? `Player ${eliminatedUserId} eliminated` : 'Revote required'}`);
+        console.log(
+          `Elimination result: ${eliminatedUserId ? `Player ${eliminatedUserId} eliminated` : 'Revote required'}`
+        );
       } catch (elimErr) {
         /*console.error('Error during elimination:', elimErr);*/
       }
@@ -207,20 +245,26 @@ async function eliminatePlayer(gameCode, round, io) {
 
   // Check for draw (multiple players with same highest vote count)
   const highestVoteCount = voteCounts[0].votesReceived;
-  const playersWithHighestVotes = voteCounts.filter(vote => vote.votesReceived === highestVoteCount);
+  const playersWithHighestVotes = voteCounts.filter(
+    (vote) => vote.votesReceived === highestVoteCount
+  );
 
-  console.log(`Highest vote count: ${highestVoteCount}, Players with highest votes: ${playersWithHighestVotes.length}`);
+  console.log(
+    `Highest vote count: ${highestVoteCount}, Players with highest votes: ${playersWithHighestVotes.length}`
+  );
 
   // If there's a draw, trigger revote
   if (playersWithHighestVotes.length > 1) {
-    console.log(`Draw detected! ${playersWithHighestVotes.length} players tied with ${highestVoteCount} votes each`);
+    console.log(
+      `Draw detected! ${playersWithHighestVotes.length} players tied with ${highestVoteCount} votes each`
+    );
 
     // Get all active players
     const allActivePlayers = await gameModel.getActivePlayers(gameCode);
-    const allActivePlayerIds = allActivePlayers.map(p => p.userId);
+    const allActivePlayerIds = allActivePlayers.map((p) => p.userId);
 
     // Get the tied players' userIds
-    const tiedPlayerIds = playersWithHighestVotes.map(vote => vote.targetId);
+    const tiedPlayerIds = playersWithHighestVotes.map((vote) => vote.targetId);
     const tiedPlayers = [];
     for (const playerId of tiedPlayerIds) {
       const player = await gameModel.getPlayerById(playerId);
@@ -246,7 +290,9 @@ async function eliminatePlayer(gameCode, round, io) {
       }
     } else {
       // Only non-tied players can vote
-      eligibleVoters = allActivePlayerIds.filter(playerId => !tiedPlayers.includes(playerId));
+      eligibleVoters = allActivePlayerIds.filter(
+        (playerId) => !tiedPlayers.includes(playerId)
+      );
       revoteMessage = `It's a draw! Only non-tied players (${eligibleVoters.join(', ')}) vote between: ${tiedPlayers.join(', ')}`;
       console.log(`All active players: ${allActivePlayerIds.join(', ')}`);
       console.log(`Tied players: ${tiedPlayers.join(', ')}`);
@@ -257,7 +303,7 @@ async function eliminatePlayer(gameCode, round, io) {
     activeRevotes.set(gameCode, {
       round: round,
       eligibleVoters: eligibleVoters,
-      tiedPlayers: tiedPlayers
+      tiedPlayers: tiedPlayers,
     });
 
     // Clear all votes for this round to allow revoting
@@ -269,7 +315,7 @@ async function eliminatePlayer(gameCode, round, io) {
       message: revoteMessage,
       tiedPlayers: tiedPlayers,
       eligibleVoters: eligibleVoters,
-      round: round
+      round: round,
     });
 
     console.log(`Revote event emitted for game ${gameCode}`);
@@ -282,7 +328,8 @@ async function eliminatePlayer(gameCode, round, io) {
   // Mark player eliminated
   await gameModel.eliminatePlayerById(eliminatedPlayerId);
 
-  const eliminatedPlayerRole = await gameModel.getPlayerRoleById(eliminatedPlayerId);
+  const eliminatedPlayerRole =
+    await gameModel.getPlayerRoleById(eliminatedPlayerId);
 
   // Get eliminated player's userId
   const eliminatedPlayer = await gameModel.getPlayerById(eliminatedPlayerId);
@@ -293,7 +340,7 @@ async function eliminatePlayer(gameCode, round, io) {
   // Emit elimination event to all clients in the room
   io.to(gameCode).emit('playerEliminated', {
     eliminatedPlayer: eliminatedPlayer.userId,
-    players: updatedPlayers
+    players: updatedPlayers,
   });
 
   if (eliminatedPlayerRole.role === 'undercover') {
@@ -303,11 +350,18 @@ async function eliminatePlayer(gameCode, round, io) {
   } else {
     // Civilian eliminated → Check if undercover wins or continue game
     const remainingPlayers = await gameModel.getActivePlayers(gameCode);
-    const remainingCivilians = remainingPlayers.filter(p => p.role === 'civilian').length;
-    const remainingUndercover = remainingPlayers.filter(p => p.role === 'undercover').length;
+    const remainingCivilians = remainingPlayers.filter(
+      (p) => p.role === 'civilian'
+    ).length;
+    const remainingUndercover = remainingPlayers.filter(
+      (p) => p.role === 'undercover'
+    ).length;
 
     // Undercover wins if they equal or outnumber civilians (typically when 2 players left: 1 undercover, 1 civilian)
-    if (remainingUndercover >= remainingCivilians || remainingPlayers.length <= 2) {
+    if (
+      remainingUndercover >= remainingCivilians ||
+      remainingPlayers.length <= 2
+    ) {
       await gameModel.endGame(gameCode, 'undercover');
       io.to(gameCode).emit('gameEnded', { winner: 'undercover' });
     } else {
@@ -319,7 +373,9 @@ async function eliminatePlayer(gameCode, round, io) {
       const currentRound = await gameModel.getCurrentRound(gameCode);
 
       // Start description phase for the new round
-      console.log(`Starting description phase for round ${currentRound} in game ${gameCode}`);
+      console.log(
+        `Starting description phase for round ${currentRound} in game ${gameCode}`
+      );
       setTimeout(() => {
         startDescribingPhase(gameCode, io);
       }, 10000); // Give players 10 seconds to see elimination result
@@ -327,7 +383,8 @@ async function eliminatePlayer(gameCode, round, io) {
       // Notify players to reload the game page with new round info
       io.to(gameCode).emit('newRoundStarted', {
         round: currentRound,
-        eliminatedPlayer: eliminatedPlayer.userId });
+        eliminatedPlayer: eliminatedPlayer.userId,
+      });
     }
   }
 
@@ -347,7 +404,7 @@ exports.getGameResults = async (req, res) => {
     res.json({
       winnerSide: gameState.winner,
       roundsPlayed: gameState.round,
-      players: players
+      players: players,
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch game results' });
@@ -386,7 +443,7 @@ exports.getGameStatus = async (req, res) => {
       gameStarted: gameState.gameStarted === 1,
       gameMode: gameState.mode || 'online',
       round: gameState.round,
-      winner: gameState.winner
+      winner: gameState.winner,
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch game status' });
@@ -406,10 +463,10 @@ async function startDescribingPhase(gameCode, io) {
   // Initialize description phase data
   const phaseData = {
     gameCode,
-    players: players.map(p => p.userId),
+    players: players.map((p) => p.userId),
     currentSpeakerIndex: 0,
     speakerDuration: 60, // 60 seconds per player
-    timer: null
+    timer: null,
   };
 
   // Store the phase data
@@ -433,13 +490,15 @@ function startPlayerTurn(gameCode, io) {
   const speakerIndex = phaseData.currentSpeakerIndex;
   const totalSpeakers = phaseData.players.length;
 
-  console.log(`Starting turn for ${currentSpeaker} (${speakerIndex + 1}/${totalSpeakers})`);
+  console.log(
+    `Starting turn for ${currentSpeaker} (${speakerIndex + 1}/${totalSpeakers})`
+  );
 
   io.to(gameCode).emit('startDescriptionPhase', {
     currentSpeaker,
     speakerIndex,
     totalSpeakers,
-    duration: phaseData.speakerDuration
+    duration: phaseData.speakerDuration,
   });
 
   let timeLeft = phaseData.speakerDuration;
@@ -452,7 +511,7 @@ function startPlayerTurn(gameCode, io) {
       currentSpeaker,
       speakerIndex,
       totalSpeakers,
-      phase: 'description'
+      phase: 'description',
     });
 
     // Decrement time after sending update
@@ -476,7 +535,9 @@ function moveToNextPlayer(gameCode, io) {
   // Check if all players have had their turn
   if (phaseData.currentSpeakerIndex >= phaseData.players.length) {
     // All players finished - start discussion phase
-    console.log(`All players finished describing in game ${gameCode}. Starting discussion phase.`);
+    console.log(
+      `All players finished describing in game ${gameCode}. Starting discussion phase.`
+    );
 
     // Clean up the phase data
     activeDescriptionPhases.delete(gameCode);
@@ -506,13 +567,13 @@ function startDiscussionPhase(gameCode, io) {
   // Notify all clients that discussion phase has started
   io.to(gameCode).emit('phaseChange', {
     newPhase: 'discussion',
-    duration: 300 // 5 minutes for discussion
+    duration: 300, // 5 minutes for discussion
   });
 
   // After 5 minutes, automatically start voting phase
   setTimeout(() => {
     io.to(gameCode).emit('phaseChange', {
-      newPhase: 'voting'
+      newPhase: 'voting',
     });
   }, 300000); // 5 minutes
 }
@@ -522,7 +583,9 @@ exports.testDescriptionPhase = async (req, res) => {
   const { gameCode, playerName } = req.body;
 
   if (!gameCode || !playerName) {
-    return res.status(400).json({ error: 'Game code and player name are required' });
+    return res
+      .status(400)
+      .json({ error: 'Game code and player name are required' });
   }
 
   try {
@@ -534,11 +597,15 @@ exports.testDescriptionPhase = async (req, res) => {
 
     const adminUserId = await gameModel.getAdminUserId(gameCode);
     if (adminUserId !== playerName) {
-      return res.status(403).json({ error: 'Only the game creator can start test phases' });
+      return res
+        .status(403)
+        .json({ error: 'Only the game creator can start test phases' });
     }
 
     const io = req.app.get('io');
-    console.log(`Starting test description phase for game ${gameCode} by ${playerName}`);
+    console.log(
+      `Starting test description phase for game ${gameCode} by ${playerName}`
+    );
 
     // Start the description phase
     startDescribingPhase(gameCode, io);
@@ -564,7 +631,6 @@ exports.disableGame = async (req, res) => {
     res.status(500).json({ error: 'Error disabling game' });
   }
 };
-
 
 // Export the description phase functions and data for testing and server access
 module.exports.startDescribingPhase = startDescribingPhase;

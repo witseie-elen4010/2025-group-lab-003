@@ -10,8 +10,10 @@ async function handleSignup(event) {
   errorDiv.classList.add('d-none');
   errorDiv.textContent = '';
 
-    const signupButton = document.querySelector('#signupForm button[type="submit"]');
-    if (signupButton) signupButton.disabled = true;  // Disable button 
+  const signupButton = document.querySelector(
+    '#signupForm button[type="submit"]'
+  );
+  if (signupButton) signupButton.disabled = true; // Disable button
 
   try {
     const res = await fetch('/api/user/signup', {
@@ -23,7 +25,7 @@ async function handleSignup(event) {
     if (res.ok) {
       showSuccessNotification('Signup successful! Redirecting to login...', {
         title: '🎉 Welcome!',
-        duration: 2500
+        duration: 2500,
       });
 
       // Automatically redirect to login page
@@ -33,12 +35,12 @@ async function handleSignup(event) {
     } else {
       const errorData = await res.json();
       showErrorNotification(errorData.error || 'Signup failed', {
-        title: '❌ Signup Failed'
+        title: '❌ Signup Failed',
       });
     }
   } catch (err) {
     showErrorNotification('Network error, please try again.', {
-      title: '🌐 Connection Error'
+      title: '🌐 Connection Error',
     });
   }
   setTimeout(() => {
@@ -56,8 +58,10 @@ async function handleLogin(event) {
   errorDiv.classList.add('d-none');
   errorDiv.textContent = '';
 
-  const loginButton = document.querySelector('#loginForm button[type="submit"]');
-  if (loginButton) loginButton.disabled = true;  // Disable button immediately
+  const loginButton = document.querySelector(
+    '#loginForm button[type="submit"]'
+  );
+  if (loginButton) loginButton.disabled = true; // Disable button immediately
 
   try {
     const res = await fetch('/api/user/login', {
@@ -74,7 +78,7 @@ async function handleLogin(event) {
 
       showSuccessNotification('Login successful! Redirecting to lobby...', {
         title: '🎮 Welcome Back!',
-        duration: 2000
+        duration: 2000,
       });
 
       // Automatically redirect to lobby
@@ -84,12 +88,12 @@ async function handleLogin(event) {
     } else {
       const errorData = await res.json();
       showErrorNotification(errorData.error || 'Login failed', {
-        title: '❌ Login Failed'
+        title: '❌ Login Failed',
       });
     }
   } catch (err) {
     showErrorNotification('Network error, please try again.', {
-      title: '🌐 Connection Error'
+      title: '🌐 Connection Error',
     });
   }
 

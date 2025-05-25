@@ -17,7 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const token = sessionStorage.getItem('token');
 
   // Run token check ONLY on protected pages, not on login or signup
-  if ((path === '/' || path === '/index.html') && (!token || isTokenExpired(token))) {
+  if (
+    (path === '/' || path === '/index.html') &&
+    (!token || isTokenExpired(token))
+  ) {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
     window.location.href = '/login.html';
@@ -40,7 +43,7 @@ async function createGame() {
   // Validate input
   if (!playerName) {
     showErrorNotification('Please enter your name first!', {
-      title: '❌ Name Required'
+      title: '❌ Name Required',
     });
     return;
   }
@@ -62,7 +65,7 @@ async function createGame() {
     const res = await fetch('/api/game/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ creatorName: playerName }) // No gameMode here
+      body: JSON.stringify({ creatorName: playerName }), // No gameMode here
     });
 
     if (res.ok) {
@@ -72,7 +75,7 @@ async function createGame() {
 
       showSuccessNotification('Game created! Game Code: ' + data.gameCode, {
         title: '🎮 Game Created',
-        duration: 5000
+        duration: 5000,
       });
 
       socket.emit('joinGame', gameCode, playerName);
@@ -109,7 +112,7 @@ async function createGame() {
     }
     console.error('Game creation error:', e.message);
     showErrorNotification(e.message, {
-      title: '❌ Game Creation Failed'
+      title: '❌ Game Creation Failed',
     });
   }
 }
@@ -121,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // When user clicks "Join Game", show input & confirm button, hide the initial button
   if (joinGameBtn && joinGameInputSection) {
-      joinGameBtn.addEventListener('click', () => {
+    joinGameBtn.addEventListener('click', () => {
       joinGameBtn.classList.add('d-none');
       joinGameInputSection.classList.remove('d-none');
     });
@@ -129,8 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (confirmJoinBtn) {
     confirmJoinBtn.addEventListener('click', () => {
-    //confirmJoinBtn.disabled = true; // Disable confirm join button on click
-    joinGame();
+      //confirmJoinBtn.disabled = true; // Disable confirm join button on click
+      joinGame();
     });
   }
 });
@@ -138,21 +141,24 @@ document.addEventListener('DOMContentLoaded', () => {
 // JOIN GAME
 async function joinGame() {
   playerName = document.getElementById('playerName').value.trim();
-  gameCode = document.getElementById('gameCodeInput').value.trim().toUpperCase();
+  gameCode = document
+    .getElementById('gameCodeInput')
+    .value.trim()
+    .toUpperCase();
 
   console.log('Attempting to join game:', { playerName, gameCode });
 
   // Validate inputs
   if (!playerName) {
     showErrorNotification('Please enter your name!', {
-      title: '❌ Name Required'
+      title: '❌ Name Required',
     });
     return;
   }
 
   if (!gameCode) {
     showErrorNotification('Please enter a game code!', {
-      title: '❌ Game Code Required'
+      title: '❌ Game Code Required',
     });
     return;
   }
@@ -179,13 +185,13 @@ async function joinGame() {
     const res = await fetch('/api/game/join', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: playerName, gameCode })
+      body: JSON.stringify({ name: playerName, gameCode }),
     });
 
     if (res.ok) {
       showSuccessNotification(`Joined game ${gameCode} successfully!`, {
         title: '🎮 Game Joined',
-        duration: 3000
+        duration: 3000,
       });
       document.getElementById('lobbySection').classList.remove('d-none');
       document.getElementById('gameCodeInput').classList.remove('d-none');
@@ -230,7 +236,7 @@ async function joinGame() {
     }
     console.error('Join game error:', err.message);
     showErrorNotification(err.message, {
-      title: '❌ Failed to Join Game'
+      title: '❌ Failed to Join Game',
     });
   }
 }
@@ -248,14 +254,14 @@ async function startGame() {
     const res = await fetch(`/api/game/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gameCode, playerName, gameMode }) // Send gameMode here
+      body: JSON.stringify({ gameCode, playerName, gameMode }), // Send gameMode here
     });
 
     if (res.ok) {
       showGameNotification('Game started!', {
         title: '🎲 Game Starting',
         type: 'success',
-        duration: 3000
+        duration: 3000,
       });
       socket.emit('startGame', gameCode);
     } else {
@@ -281,7 +287,7 @@ socket.on('gameStarted', (data) => {
   showGameNotification('Game has started! Redirecting to game...', {
     title: '🎮 Game Started',
     type: 'success',
-    duration: 1500
+    duration: 1500,
   });
 
   // Stop polling since we received the socket event
@@ -299,7 +305,9 @@ socket.on('joinedRoom', (data) => {
   console.log('Joined room confirmation:', data);
   if (!data.success) {
     console.error('Failed to join socket room:', data.error);
-    showErrorNotification('Failed to connect to game room. Please refresh and try again.');
+    showErrorNotification(
+      'Failed to connect to game room. Please refresh and try again.'
+    );
   }
 });
 
@@ -337,7 +345,7 @@ function startGameStartPolling() {
           showGameNotification('Game has started! Redirecting to game...', {
             title: '🎮 Game Started',
             type: 'success',
-            duration: 1000
+            duration: 1000,
           });
 
           setTimeout(() => {
@@ -365,7 +373,7 @@ socket.on('updatePlayerList', async (players) => {
   const startBtn = document.getElementById('startGameBtn');
   playerList.innerHTML = '';
 
-  players.forEach(player => {
+  players.forEach((player) => {
     const li = document.createElement('li');
     li.textContent = player.userId;
     playerList.appendChild(li);
@@ -374,7 +382,9 @@ socket.on('updatePlayerList', async (players) => {
   if (players.length >= 3) {
     console.log('Enough players, checking admin status...');
     try {
-      const adminCheckRes = await fetch(`/api/game/is-admin/${gameCode}/${playerName}`);
+      const adminCheckRes = await fetch(
+        `/api/game/is-admin/${gameCode}/${playerName}`
+      );
       if (!adminCheckRes.ok) {
         console.error('Admin check API failed:', adminCheckRes.status);
         startBtn.classList.add('d-none');

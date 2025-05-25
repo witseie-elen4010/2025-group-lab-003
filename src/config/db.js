@@ -17,14 +17,15 @@ const config = {
   }
 };*/
 
-const poolPromise = mssql.connect(connectionString)
-  .then(pool => {
+const poolPromise = mssql
+  .connect(connectionString)
+  .then((pool) => {
     console.log('✅ Connected to Azure SQL Database');
     return pool;
   })
-  .catch(err => {
+  .catch((err) => {
     console.error('❌ Database connection failed:', err);
-    throw err;  // Important: re-throw error to avoid resolving to undefined
+    throw err; // Important: re-throw error to avoid resolving to undefined
   });
 
 module.exports = {

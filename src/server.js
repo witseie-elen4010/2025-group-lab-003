@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
 
 // Game route
 app.get('/game.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'game.html'));
+  res.sendFile(path.join(__dirname, 'views', 'game.html'));
 });
 
 // Login and Sign Up routes
@@ -80,7 +80,6 @@ app.get('/adminLogs.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'adminLogs.html'));
 });
 
-
 // ------------------------------- SOCKET CODE ------------------------------------------------------------------------------------
 
 // Set up a Socket.IO connection handler
@@ -88,32 +87,40 @@ io.on('connection', (socket) => {
   console.log('A user connected');
 
   socket.on('joinGame', async (gameCode, playerName, gameMode) => {
-  console.log(`${playerName} joined socket room for game: ${gameCode}`);
+    console.log(`${playerName} joined socket room for game: ${gameCode}`);
 
-  // Join the socket room
-  socket.join(gameCode);
+    // Join the socket room
+    socket.join(gameCode);
 
-  // Store player info on the socket for debugging
-  socket.playerName = playerName;
-  socket.gameCode = gameCode;
+    // Store player info on the socket for debugging
+    socket.playerName = playerName;
+    socket.gameCode = gameCode;
 
-  // Fetch updated player list for this game
-  try {
-    const players = await gameModel.getPlayersByGameCode(gameCode);
-    console.log(`Player ${playerName} joined room ${gameCode}. Total players in DB: ${players.length}`);
+    // Fetch updated player list for this game
+    try {
+      const players = await gameModel.getPlayersByGameCode(gameCode);
+      console.log(
+        `Player ${playerName} joined room ${gameCode}. Total players in DB: ${players.length}`
+      );
 
-    // Broadcast updated player list to everyone in the room
-    io.to(gameCode).emit('updatePlayerList', players);
+      // Broadcast updated player list to everyone in the room
+      io.to(gameCode).emit('updatePlayerList', players);
 
-    // Confirm the player joined the socket room
-    socket.emit('joinedRoom', { gameCode, playerName, success: true });
-
-  } catch (err) {
-    console.error(`Error handling joinGame for ${playerName} in ${gameCode}:`, err);
-    socket.emit('joinedRoom', { gameCode, playerName, success: false, error: err.message });
-  }
-});
-
+      // Confirm the player joined the socket room
+      socket.emit('joinedRoom', { gameCode, playerName, success: true });
+    } catch (err) {
+      console.error(
+        `Error handling joinGame for ${playerName} in ${gameCode}:`,
+        err
+      );
+      socket.emit('joinedRoom', {
+        gameCode,
+        playerName,
+        success: false,
+        error: err.message,
+      });
+    }
+  });
 
   // --- Chat handler ---
   socket.on('joinRoom', (gameCode) => {
@@ -121,7 +128,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('chatMessage', async ({ gameCode, playerName, message }) => {
-      // Check mode before allowing chat
+    // Check mode before allowing chat
     let mode = 'online';
     try {
       mode = await gameModel.getGameMode(gameCode);
@@ -138,7 +145,9 @@ io.on('connection', (socket) => {
     if (phaseData) {
       const currentSpeaker = phaseData.players[phaseData.currentSpeakerIndex];
       if (currentSpeaker !== playerName) {
-        console.log(`Blocked chat from ${playerName} - not their turn (current speaker: ${currentSpeaker})`);
+        console.log(
+          `Blocked chat from ${playerName} - not their turn (current speaker: ${currentSpeaker})`
+        );
         return; // Don't allow non-speakers to chat during description phase
       }
     }
@@ -157,37 +166,39 @@ io.on('connection', (socket) => {
 
   // --- End chat handler ---
   socket.on('startGame', async (gameCode) => {
-  console.log(`Game ${gameCode} started via socket`);
+    console.log(`Game ${gameCode} started via socket`);
 
-  let mode = 'online';
-  try {
-    mode = await gameModel.getGameMode(gameCode);
-  } catch (err) {
-    console.error('Failed to fetch game mode for started game:', err);
-  }
+    let mode = 'online';
+    try {
+      mode = await gameModel.getGameMode(gameCode);
+    } catch (err) {
+      console.error('Failed to fetch game mode for started game:', err);
+    }
 
-  // Get all players in the game to ensure we're notifying everyone
-  try {
-    const players = await gameModel.getPlayersByGameCode(gameCode);
-    console.log(`Notifying ${players.length} players in game ${gameCode} that game has started`);
+    // Get all players in the game to ensure we're notifying everyone
+    try {
+      const players = await gameModel.getPlayersByGameCode(gameCode);
+      console.log(
+        `Notifying ${players.length} players in game ${gameCode} that game has started`
+      );
 
-    // Emit to the room
-    io.to(gameCode).emit('gameStarted', { gameMode: mode });
+      // Emit to the room
+      io.to(gameCode).emit('gameStarted', { gameMode: mode });
 
-    // Also emit to all connected sockets as a backup
-    const sockets = await io.in(gameCode).fetchSockets();
-    console.log(`Found ${sockets.length} connected sockets in room ${gameCode}`);
+      // Also emit to all connected sockets as a backup
+      const sockets = await io.in(gameCode).fetchSockets();
+      console.log(
+        `Found ${sockets.length} connected sockets in room ${gameCode}`
+      );
 
-    // Note: Description phase is triggered by HTTP route, not socket event
-    // This prevents duplicate triggers
-
-  } catch (err) {
-    console.error('Error getting players for game start notification:', err);
-    // Still try to emit the event
-    io.to(gameCode).emit('gameStarted', { gameMode: mode });
-  }
-});
-
+      // Note: Description phase is triggered by HTTP route, not socket event
+      // This prevents duplicate triggers
+    } catch (err) {
+      console.error('Error getting players for game start notification:', err);
+      // Still try to emit the event
+      io.to(gameCode).emit('gameStarted', { gameMode: mode });
+    }
+  });
 
   socket.on('disconnect', () => {
     console.log('A user disconnected');
@@ -197,6 +208,10 @@ io.on('connection', (socket) => {
 const port = process.env.PORT || 3000;
 server.listen(port, () => {
   console.log('Server running on port', port);
-  console.log('Environment loaded:', process.env.INCOGNITO_CONNECTION_STRING ? 'DB connection string found' : 'DB connection string missing');
+  console.log(
+    'Environment loaded:',
+    process.env.INCOGNITO_CONNECTION_STRING
+      ? 'DB connection string found'
+      : 'DB connection string missing'
+  );
 });
-

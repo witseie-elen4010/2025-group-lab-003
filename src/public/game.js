@@ -23,7 +23,6 @@ async function fetchGameMode(gameCode) {
   }
 }
 
-
 // Show/hide chat based on game mode
 window.addEventListener('DOMContentLoaded', async () => {
   const mode = await fetchGameMode(gameCode);
@@ -42,11 +41,13 @@ window.addEventListener('DOMContentLoaded', async () => {
       playerRole = data.role;
       document.getElementById('playerWord').textContent = data.word;
     } else {
-      document.getElementById('playerWord').textContent = data.error || 'Could not load your word.';
+      document.getElementById('playerWord').textContent =
+        data.error || 'Could not load your word.';
     }
   } catch (err) {
     console.error('Error fetching word:', err.message);
-    document.getElementById('playerWord').textContent = 'An unexpected error occurred.';
+    document.getElementById('playerWord').textContent =
+      'An unexpected error occurred.';
   }
 
   // Show admin logs button if admin
@@ -91,18 +92,18 @@ socket.on('playerEliminated', (data) => {
   if (data.eliminatedPlayer === playerName) {
     showGameNotification('You have been eliminated! Redirecting...', {
       type: 'error',
-      duration: 3000
+      duration: 3000,
     });
 
     // Automatically redirect eliminated players after 3 seconds
     setTimeout(() => {
-      if(playerRole !== 'undercover') {
+      if (playerRole !== 'undercover') {
         window.location.href = `/eliminated.html?gameCode=${gameCode}&playerName=${playerName}`;
       }
     }, 3000);
   } else {
     showGameNotification(`Player eliminated: ${data.eliminatedPlayer}`, {
-      type: 'warning'
+      type: 'warning',
     });
   }
 });
@@ -112,12 +113,16 @@ socket.on('gameEnded', (data) => {
   const title = isWinner ? '🎉 You Won!' : '😞 Game Over';
   const message = `Game over! Winner: ${data.winner}s. Redirecting...`;
 
-  console.log('Game ended, redirecting to results page...', { isWinner, winner: data.winner, playerRole });
+  console.log('Game ended, redirecting to results page...', {
+    isWinner,
+    winner: data.winner,
+    playerRole,
+  });
 
   showGameNotification(message, {
     title: title,
     type: isWinner ? 'success' : 'error',
-    duration: 2500
+    duration: 2500,
   });
 
   // Automatically redirect all players to the appropriate results page
@@ -134,11 +139,14 @@ socket.on('gameEnded', (data) => {
 
 socket.on('newRoundStarted', (data) => {
   if (data.eliminatedPlayer !== playerName) {
-    showGameNotification(`Round ${data.round} started! Your word has been updated. Reloading...`, {
-      title: '🔄 New Round',
-      type: 'info',
-      duration: 2500
-    });
+    showGameNotification(
+      `Round ${data.round} started! Your word has been updated. Reloading...`,
+      {
+        title: '🔄 New Round',
+        type: 'info',
+        duration: 2500,
+      }
+    );
 
     // Automatically reload the game page for the new round
     setTimeout(() => {
@@ -149,36 +157,41 @@ socket.on('newRoundStarted', (data) => {
 
 // public/game.js
 window.addEventListener('DOMContentLoaded', async () => {
-    const params = new URLSearchParams(window.location.search);
-    const playerName = params.get('playerName');
-    const gameCode = params.get('gameCode');
+  const params = new URLSearchParams(window.location.search);
+  const playerName = params.get('playerName');
+  const gameCode = params.get('gameCode');
 
-    try {
-      const res = await fetch(`/api/game/player/${gameCode}/${playerName}`);
-      const data = await res.json();
+  try {
+    const res = await fetch(`/api/game/player/${gameCode}/${playerName}`);
+    const data = await res.json();
 
-      if (res.ok) {
-        // Only show the player's word — omit role
-        playerRole = data.role;
-        document.getElementById('playerWord').textContent = data.word;
-        //document.getElementById('playerRole').textContent = `Your role: ${data.role}`;
+    if (res.ok) {
+      // Only show the player's word — omit role
+      playerRole = data.role;
+      document.getElementById('playerWord').textContent = data.word;
+      //document.getElementById('playerRole').textContent = `Your role: ${data.role}`;
 
-        // Show notification that description phase will start soon
-        showGameNotification('Get ready! Description phase will start in 10 seconds. Each player gets 1 minute to describe their word.', {
+      // Show notification that description phase will start soon
+      showGameNotification(
+        'Get ready! Description phase will start in 10 seconds. Each player gets 1 minute to describe their word.',
+        {
           title: '⏰ Description Phase Starting Soon',
           type: 'info',
-          duration: 5000
-        });
-      } else {
-        document.getElementById('playerWord').textContent = data.error || 'Could not load your word.';
-        //document.getElementById('playerRole').textContent = 'Unknown role';
-      }
-    } catch (err) {
-      console.error('Error fetching word:', err.message);
-      document.getElementById('playerWord').textContent = 'An unexpected error occurred.';
+          duration: 5000,
+        }
+      );
+    } else {
+      document.getElementById('playerWord').textContent =
+        data.error || 'Could not load your word.';
       //document.getElementById('playerRole').textContent = 'Unknown role';
     }
-  });
+  } catch (err) {
+    console.error('Error fetching word:', err.message);
+    document.getElementById('playerWord').textContent =
+      'An unexpected error occurred.';
+    //document.getElementById('playerRole').textContent = 'Unknown role';
+  }
+});
 
 async function startVote() {
   try {
@@ -193,14 +206,15 @@ async function startVote() {
     heading.innerText = 'Vote a player out:';
     votingList.appendChild(heading);
 
-    players.forEach(player => {
+    players.forEach((player) => {
       if (player.userId === playerName) return;
       if (player.status === 'eliminated') return;
       const btn = document.createElement('button');
       btn.className = 'btn btn-outline-danger m-1';
       btn.innerText = `Vote ${player.userId}`;
       btn.onclick = () => {
-        showConfirmNotification(`Are you sure you want to vote for ${player.userId}?`,
+        showConfirmNotification(
+          `Are you sure you want to vote for ${player.userId}?`,
           () => submitVote(player.userId)
         );
       };
@@ -220,16 +234,21 @@ async function submitVote(votedPlayer) {
       body: JSON.stringify({
         gameCode,
         voterName: playerName,
-        votedFor: votedPlayer
-      })
+        votedFor: votedPlayer,
+      }),
     });
 
     if (response.ok) {
-      showSuccessNotification(`Your vote for ${votedPlayer} has been recorded.`);
-      document.getElementById('votingList').innerHTML = '<p>Thank you for voting!</p>';
+      showSuccessNotification(
+        `Your vote for ${votedPlayer} has been recorded.`
+      );
+      document.getElementById('votingList').innerHTML =
+        '<p>Thank you for voting!</p>';
     } else {
       const errorData = await response.json();
-      showErrorNotification(`Failed to submit vote: ${errorData.error || 'Unknown error'}`);
+      showErrorNotification(
+        `Failed to submit vote: ${errorData.error || 'Unknown error'}`
+      );
     }
   } catch (error) {
     showErrorNotification('Error submitting vote. Please try again.');
@@ -256,7 +275,7 @@ function sendChat() {
   }
 }
 
-document.getElementById('chatInput').addEventListener('keydown', function(e) {
+document.getElementById('chatInput').addEventListener('keydown', function (e) {
   // Prevent all typing during description phase when it's not player's turn
   if (gamePhase === 'description' && currentSpeaker !== playerName) {
     e.preventDefault();
@@ -267,7 +286,7 @@ document.getElementById('chatInput').addEventListener('keydown', function(e) {
 });
 
 // Also prevent paste events when it's not player's turn
-document.getElementById('chatInput').addEventListener('paste', function(e) {
+document.getElementById('chatInput').addEventListener('paste', function (e) {
   if (gamePhase === 'description' && currentSpeaker !== playerName) {
     e.preventDefault();
     return false;
@@ -285,7 +304,11 @@ socket.on('startDescriptionPhase', (data) => {
   document.getElementById('phaseTitle').textContent = 'Description Phase';
 
   updateChatAccess();
-  updateSpeakerDisplay(data.currentSpeaker, data.speakerIndex, data.totalSpeakers);
+  updateSpeakerDisplay(
+    data.currentSpeaker,
+    data.speakerIndex,
+    data.totalSpeakers
+  );
 
   /*showGameNotification('Description phase started! Each player gets 1 minute to describe their word.', {
     title: '🎤 Description Phase',
@@ -300,20 +323,31 @@ socket.on('timerUpdate', (data) => {
 
   if (data.phase === 'description') {
     currentSpeaker = data.currentSpeaker;
-    updateSpeakerDisplay(data.currentSpeaker, data.speakerIndex, data.totalSpeakers);
+    updateSpeakerDisplay(
+      data.currentSpeaker,
+      data.speakerIndex,
+      data.totalSpeakers
+    );
     updateChatAccess();
   }
 });
 
 socket.on('nextSpeaker', (data) => {
   currentSpeaker = data.currentSpeaker;
-  updateSpeakerDisplay(data.currentSpeaker, data.speakerIndex, data.totalSpeakers);
+  updateSpeakerDisplay(
+    data.currentSpeaker,
+    data.speakerIndex,
+    data.totalSpeakers
+  );
   updateChatAccess();
 
-  showGameNotification(`${data.currentSpeaker}'s turn to describe their word! Each player gets 1 minute to describe their word.`, {
-    type: 'info',
-    duration: 10000
-  });
+  showGameNotification(
+    `${data.currentSpeaker}'s turn to describe their word! Each player gets 1 minute to describe their word.`,
+    {
+      type: 'info',
+      duration: 10000,
+    }
+  );
 });
 
 socket.on('phaseChange', (data) => {
@@ -327,11 +361,14 @@ socket.on('phaseChange', (data) => {
 
     updateChatAccess();
 
-    showGameNotification('Discussion phase started! Everyone can now chat freely.', {
-      title: '💬 Discussion Phase',
-      type: 'success',
-      duration: 5000
-    });
+    showGameNotification(
+      'Discussion phase started! Everyone can now chat freely.',
+      {
+        title: '💬 Discussion Phase',
+        type: 'success',
+        duration: 5000,
+      }
+    );
   } else if (data.newPhase === 'voting') {
     document.getElementById('discussionPhase').style.display = 'none';
     gamePhase = 'voting';
@@ -340,7 +377,7 @@ socket.on('phaseChange', (data) => {
     showGameNotification('Time to vote! Choose who to eliminate.', {
       title: '🗳️ Voting Phase',
       type: 'warning',
-      duration: 3000
+      duration: 3000,
     });
 
     // Show voting buttons
@@ -353,7 +390,7 @@ socket.on('revoteRequired', (data) => {
   showGameNotification(data.message, {
     title: '🔄 Revote Required',
     type: 'warning',
-    duration: 8000
+    duration: 8000,
   });
 
   // Clear and rebuild voting UI
@@ -363,35 +400,36 @@ socket.on('revoteRequired', (data) => {
   // Check if current player is eligible to vote
   const isEligibleVoter = data.eligibleVoters.includes(playerName);
 
-    if (isEligibleVoter) {
-      // Show voting buttons for tied players (excluding self if in small group)
-      const heading = document.createElement('h5');
-      heading.innerText = data.message || '🔄 Revote - Choose between:';
-      heading.className = 'text-warning mb-3';
-      votingList.appendChild(heading);
+  if (isEligibleVoter) {
+    // Show voting buttons for tied players (excluding self if in small group)
+    const heading = document.createElement('h5');
+    heading.innerText = data.message || '🔄 Revote - Choose between:';
+    heading.className = 'text-warning mb-3';
+    votingList.appendChild(heading);
 
-      data.tiedPlayers.forEach(player => {
-        // Skip creating button if this is the current player in a small group revote
-        if (player !== playerName || data.tiedPlayers.length > 3) {
-          const btn = document.createElement('button');
-          btn.className = 'btn btn-outline-danger m-1';
-          btn.innerText = `Vote ${player}`;
-          btn.onclick = () => {
-            showConfirmNotification(`Are you sure you want to vote for ${player}?`,
-              () => submitVote(player)
-            );
-          };
-          votingList.appendChild(btn);
-        }
-      });
-
-      // Add special instructions for small group revotes
-      if (data.tiedPlayers.length <= 3) {
-        const info = document.createElement('p');
-        info.className = 'text-muted small mt-2';
-        info.innerText = 'Note: You cannot vote for yourself in this revote';
-        votingList.appendChild(info);
+    data.tiedPlayers.forEach((player) => {
+      // Skip creating button if this is the current player in a small group revote
+      if (player !== playerName || data.tiedPlayers.length > 3) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-outline-danger m-1';
+        btn.innerText = `Vote ${player}`;
+        btn.onclick = () => {
+          showConfirmNotification(
+            `Are you sure you want to vote for ${player}?`,
+            () => submitVote(player)
+          );
+        };
+        votingList.appendChild(btn);
       }
+    });
+
+    // Add special instructions for small group revotes
+    if (data.tiedPlayers.length <= 3) {
+      const info = document.createElement('p');
+      info.className = 'text-muted small mt-2';
+      info.innerText = 'Note: You cannot vote for yourself in this revote';
+      votingList.appendChild(info);
+    }
   } else {
     // Player is not eligible to vote (they are tied)
     const heading = document.createElement('h5');
@@ -400,7 +438,8 @@ socket.on('revoteRequired', (data) => {
     votingList.appendChild(heading);
 
     const message = document.createElement('p');
-    message.innerText = 'You are tied for elimination. Other players are voting to decide your fate.';
+    message.innerText =
+      'You are tied for elimination. Other players are voting to decide your fate.';
     message.className = 'text-muted';
     votingList.appendChild(message);
 
@@ -416,7 +455,8 @@ function updateTimer(secondsLeft) {
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  document.getElementById('timeRemaining').textContent = `${timeString} remaining`;
+  document.getElementById('timeRemaining').textContent =
+    `${timeString} remaining`;
 }
 
 function updateProgressBar(timeLeft, maxTime) {
@@ -455,7 +495,14 @@ function updateSpeakerDisplay(speaker, index, total) {
 }
 
 function updateChatAccess() {
-  console.log('updateChatAccess called - gamePhase:', gamePhase, 'currentSpeaker:', currentSpeaker, 'playerName:', playerName);
+  console.log(
+    'updateChatAccess called - gamePhase:',
+    gamePhase,
+    'currentSpeaker:',
+    currentSpeaker,
+    'playerName:',
+    playerName
+  );
   const chatInput = document.getElementById('chatInput');
   const sendButton = document.querySelector('#chatCard button');
 
@@ -464,18 +511,19 @@ function updateChatAccess() {
     document.getElementById('voteList').style.display = 'none';
 
     // Only current speaker can type during description phase
-    const canSpeak = (currentSpeaker === playerName);
+    const canSpeak = currentSpeaker === playerName;
     chatInput.disabled = !canSpeak;
     chatInput.readOnly = !canSpeak; // Prevent typing completely
     if (sendButton) sendButton.disabled = !canSpeak;
 
     if (canSpeak) {
-      chatInput.placeholder = "Describe your word (avoid saying it directly)...";
+      chatInput.placeholder =
+        'Describe your word (avoid saying it directly)...';
       chatInput.className = 'form-control me-2 border-success';
       chatInput.style.cursor = 'text';
       chatInput.style.backgroundColor = '';
     } else {
-      chatInput.placeholder = "Wait up until your turn to type";
+      chatInput.placeholder = 'Wait up until your turn to type';
       chatInput.className = 'form-control me-2 bg-light text-muted';
       chatInput.style.cursor = 'not-allowed';
       chatInput.style.backgroundColor = '#f8f9fa';
@@ -491,7 +539,7 @@ function updateChatAccess() {
     chatInput.disabled = false;
     chatInput.readOnly = false;
     if (sendButton) sendButton.disabled = false;
-    chatInput.placeholder = "Ask questions and discuss...";
+    chatInput.placeholder = 'Ask questions and discuss...';
     chatInput.className = 'form-control me-2 border-primary';
     chatInput.style.cursor = 'text';
     chatInput.style.backgroundColor = '';
@@ -503,7 +551,7 @@ function updateChatAccess() {
     chatInput.disabled = false;
     chatInput.readOnly = false;
     if (sendButton) sendButton.disabled = false;
-    chatInput.placeholder = "Type a message...";
+    chatInput.placeholder = 'Type a message...';
     chatInput.className = 'form-control me-2';
     chatInput.style.cursor = 'text';
     chatInput.style.backgroundColor = '';
@@ -519,32 +567,32 @@ async function testDescriptionPhase() {
     const response = await fetch('/api/game/test-description-phase', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         gameCode: gameCode,
-        playerName: playerName
-      })
+        playerName: playerName,
+      }),
     });
 
     if (response.ok) {
       showGameNotification('Test description phase started!', {
         title: '🧪 Test Mode',
         type: 'info',
-        duration: 5000
+        duration: 5000,
       });
     } else {
       console.error('Failed to start test description phase');
       showGameNotification('Failed to start test phase', {
         type: 'error',
-        duration: 5000
+        duration: 5000,
       });
     }
   } catch (error) {
     console.error('Error starting test description phase:', error);
     showGameNotification('Error starting test phase', {
       type: 'error',
-      duration: 3000
+      duration: 3000,
     });
   }
 }

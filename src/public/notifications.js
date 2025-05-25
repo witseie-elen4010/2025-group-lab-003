@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize Bootstrap toasts
   const toastElList = [].slice.call(document.querySelectorAll('.toast'));
-  toastElList.map(function(toastEl) {
+  toastElList.map(function (toastEl) {
     return new bootstrap.Toast(toastEl);
   });
 });
@@ -31,7 +31,7 @@ function showNotification(options = {}) {
     type = 'info',
     duration = 3000,
     buttonText = '',
-    buttonCallback = null
+    buttonCallback = null,
   } = options;
 
   // Get the dedicated notifications container (should be included in HTML)
@@ -53,11 +53,11 @@ function showNotification(options = {}) {
 
   // Map notification type to Bootstrap alert classes for better consistency
   const typeClassMap = {
-    'success': 'text-bg-success',
-    'error': 'text-bg-danger',
-    'warning': 'text-bg-warning',
-    'info': 'text-bg-info',
-    'game': 'text-bg-primary'
+    success: 'text-bg-success',
+    error: 'text-bg-danger',
+    warning: 'text-bg-warning',
+    info: 'text-bg-info',
+    game: 'text-bg-primary',
   };
 
   const bgClass = typeClassMap[type] || 'text-bg-light';
@@ -74,9 +74,13 @@ function showNotification(options = {}) {
       </div>
       <div class="toast-body">
         ${message}
-        ${buttonText ? `<div class="mt-2 pt-2 border-top border-light">
+        ${
+          buttonText
+            ? `<div class="mt-2 pt-2 border-top border-light">
           <button type="button" class="btn btn-sm ${getButtonClass(type)} action-button">${buttonText}</button>
-        </div>` : ''}
+        </div>`
+            : ''
+        }
       </div>
     </div>
   `;
@@ -99,7 +103,7 @@ function showNotification(options = {}) {
   // Initialize and show the toast
   const toast = new bootstrap.Toast(toastEl, {
     autohide: duration > 0,
-    delay: duration
+    delay: duration,
   });
 
   toast.show();
@@ -127,11 +131,11 @@ function showNotification(options = {}) {
  */
 function getButtonClass(type) {
   const buttonClasses = {
-    'success': 'btn-outline-light',
-    'error': 'btn-outline-light',
-    'warning': 'btn-outline-dark',
-    'info': 'btn-outline-light',
-    'game': 'btn-outline-light'
+    success: 'btn-outline-light',
+    error: 'btn-outline-light',
+    warning: 'btn-outline-dark',
+    info: 'btn-outline-light',
+    game: 'btn-outline-light',
   };
 
   return buttonClasses[type] || 'btn-outline-primary';
@@ -144,11 +148,11 @@ function getButtonClass(type) {
  */
 function getIconForType(type) {
   const icons = {
-    'success': '<i class="bi bi-check-circle-fill me-2"></i>',
-    'error': '<i class="bi bi-exclamation-triangle-fill me-2"></i>',
-    'warning': '<i class="bi bi-exclamation-circle-fill me-2"></i>',
-    'info': '<i class="bi bi-info-circle-fill me-2"></i>',
-    'game': '<i class="bi bi-controller me-2"></i>'
+    success: '<i class="bi bi-check-circle-fill me-2"></i>',
+    error: '<i class="bi bi-exclamation-triangle-fill me-2"></i>',
+    warning: '<i class="bi bi-exclamation-circle-fill me-2"></i>',
+    info: '<i class="bi bi-info-circle-fill me-2"></i>',
+    game: '<i class="bi bi-controller me-2"></i>',
   };
 
   return icons[type] || icons.info;
@@ -161,11 +165,11 @@ function getIconForType(type) {
  */
 function getDefaultTitleForType(type) {
   const titles = {
-    'success': 'Success',
-    'error': 'Error',
-    'warning': 'Warning',
-    'info': 'Information',
-    'game': 'Game Notification'
+    success: 'Success',
+    error: 'Error',
+    warning: 'Warning',
+    info: 'Information',
+    game: 'Game Notification',
   };
 
   return titles[type] || 'Notification';
@@ -191,7 +195,7 @@ function showGameNotification(message, options = {}) {
     message,
     type: 'game',
     duration: 5000,
-    ...options
+    ...options,
   });
 }
 
@@ -205,7 +209,7 @@ function showSuccessNotification(message, options = {}) {
     title: 'Success',
     message,
     type: 'success',
-    ...options
+    ...options,
   });
 }
 
@@ -220,7 +224,7 @@ function showErrorNotification(message, options = {}) {
     message,
     type: 'error',
     duration: 5000,
-    ...options
+    ...options,
   });
 }
 
@@ -234,7 +238,7 @@ function showWarningNotification(message, options = {}) {
     title: 'Warning',
     message,
     type: 'warning',
-    ...options
+    ...options,
   });
 }
 
@@ -326,10 +330,10 @@ function showConfirmNotification(message, onConfirm, onCancel = () => {}) {
 
 // Replace the browser's alert function with our custom notification
 window.originalAlert = window.alert;
-window.alert = function(message) {
+window.alert = function (message) {
   showNotification({
     message: message,
     type: 'info',
-    duration: 5000
+    duration: 5000,
   });
 };

@@ -9,9 +9,12 @@ exports.getActionLogs = async (req, res) => {
 
   try {
     const pool = await db.poolPromise;
-    const result = await pool.request()
+    const result = await pool
+      .request()
       .input('gameCode', db.sql.VarChar, gameCode)
-      .query(`SELECT * FROM ActionLogs WHERE gameCode = @gameCode ORDER BY timestamp DESC`);
+      .query(
+        `SELECT * FROM ActionLogs WHERE gameCode = @gameCode ORDER BY timestamp DESC`
+      );
 
     res.json(result.recordset);
   } catch (err) {

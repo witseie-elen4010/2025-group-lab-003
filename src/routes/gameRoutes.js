@@ -16,6 +16,4 @@ router.get('/status/:gameCode', gameController.getGameStatus);
 router.post('/test-description-phase', gameController.testDescriptionPhase);
 router.post('/disableGame', gameController.disableGame);
 
-
 module.exports = router;
-

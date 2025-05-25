@@ -1,66 +1,68 @@
-<div id="notifications-container" class="position-fixed top-0 start-50 translate-middle-x" style="
-  top: 1rem !important;
-  z-index: 1055;
-  width: 100%;
-  max-width: 400px;
-  pointer-events: none;
-">
-</div>
-
+<div
+  id="notifications-container"
+  class="position-fixed top-0 start-50 translate-middle-x"
+  style="
+    top: 1rem !important;
+    z-index: 1055;
+    width: 100%;
+    max-width: 400px;
+    pointer-events: none;
+  "
+></div>
 
 <style>
-/* Notification container positioning */
-#notifications-container {
-  /* Ensure proper stacking and positioning */
-  z-index: 1055 !important; /* Bootstrap's toast z-index */
-}
-
-/* Individual notification styling */
-#notifications-container .toast {
-  pointer-events: auto;
-  margin-bottom: 0.5rem;
-  /*Bootstrap's built-in shadow */
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-/* Smooth animations for notifications */
-#notifications-container .toast.showing {
-  animation: slideInDown 0.3s ease-out forwards;
-}
-
-#notifications-container .toast.hiding {
-  animation: slideOutUp 0.3s ease-in forwards;
-}
-
-/* Keyframe animations */
-@keyframes slideInDown {
-  from {
-    opacity: 0;
-    transform: translate3d(0, -100%, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-@keyframes slideOutUp {
-  from {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    opacity: 0;
-    transform: translate3d(0, -100%, 0);
-  }
-}
-
-/* Responsive adjustments */
-@media (max-width: 576px) {
+  /* Notification container positioning */
   #notifications-container {
-    max-width: 95%;
-    left: 2.5% !important;
-    transform: none !important;
+    /* Ensure proper stacking and positioning */
+    z-index: 1055 !important; /* Bootstrap's toast z-index */
   }
-}
+
+  /* Individual notification styling */
+  #notifications-container .toast {
+    pointer-events: auto;
+    margin-bottom: 0.5rem;
+    /*Bootstrap's built-in shadow */
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+
+  /* Smooth animations for notifications */
+  #notifications-container .toast.showing {
+    animation: slideInDown 0.3s ease-out forwards;
+  }
+
+  #notifications-container .toast.hiding {
+    animation: slideOutUp 0.3s ease-in forwards;
+  }
+
+  /* Keyframe animations */
+  @keyframes slideInDown {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -100%, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes slideOutUp {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      opacity: 0;
+      transform: translate3d(0, -100%, 0);
+    }
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 576px) {
+    #notifications-container {
+      max-width: 95%;
+      left: 2.5% !important;
+      transform: none !important;
+    }
+  }
 </style>

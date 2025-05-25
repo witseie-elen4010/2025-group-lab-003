@@ -13,17 +13,20 @@ describe('createGame (success scenario)', () => {
   // Set up fresh request/response objects before each test
   let req, res;
   beforeEach(() => {
-    req = { body: { creatorName: 'Alice' } };  // valid creatorName for success scenario
+    req = { body: { creatorName: 'Alice' } }; // valid creatorName for success scenario
     // Mock response object with jest functions for status and json
     res = {
-      status: jest.fn().mockReturnThis(),  // allows chaining like res.status(200).json(...)
-      json: jest.fn()
+      status: jest.fn().mockReturnThis(), // allows chaining like res.status(200).json(...)
+      json: jest.fn(),
     };
 
     // Optionally, set default return values for our mock functions
-    gameModel.createGame.mockResolvedValue('GAME123');   // simulate DB generating game code "GAME123"
-    gameModel.joinGame.mockResolvedValue({ playerName: 'Alice', gameCode: 'GAME123' });
-    logAction.mockResolvedValue(true);  // simulate successful log (no meaningful return)
+    gameModel.createGame.mockResolvedValue('GAME123'); // simulate DB generating game code "GAME123"
+    gameModel.joinGame.mockResolvedValue({
+      playerName: 'Alice',
+      gameCode: 'GAME123',
+    });
+    logAction.mockResolvedValue(true); // simulate successful log (no meaningful return)
   });
 
   // Ensure no mock calls or state leak between tests
@@ -52,11 +55,11 @@ describe('createGame (success scenario)', () => {
     );
 
     // 4. Check that the response was sent with HTTP 200 and the correct JSON body
-    
+
     // expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       message: 'Game created successfully',
-      gameCode: 'GAME123'
+      gameCode: 'GAME123',
     });
     //expect(res.json).toHaveBeenCalledWith({ message: 'Game created successfully GAME123' });
   });
@@ -67,7 +70,9 @@ describe('createGame (success scenario)', () => {
     await gameController.createGame(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Creator name is required' });
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Creator name is required',
+    });
 
     expect(gameModel.createGame).not.toHaveBeenCalled();
     expect(gameModel.joinGame).not.toHaveBeenCalled();
@@ -84,7 +89,6 @@ describe('createGame (success scenario)', () => {
     expect(gameModel.joinGame).not.toHaveBeenCalled();
     expect(logAction).not.toHaveBeenCalled();
   });
-
 });
 
 describe('joinGame controller', () => {
@@ -94,10 +98,10 @@ describe('joinGame controller', () => {
     req = { body: { name: 'Bob', gameCode: 'GAME123' } };
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
     };
 
-    gameModel.joinGame.mockResolvedValue(undefined);  // joinGame returns nothing meaningful
+    gameModel.joinGame.mockResolvedValue(undefined); // joinGame returns nothing meaningful
     logAction.mockResolvedValue(true);
   });
 
@@ -109,8 +113,15 @@ describe('joinGame controller', () => {
     await gameController.joinGame(req, res);
 
     expect(gameModel.joinGame).toHaveBeenCalledWith('Bob', 'GAME123');
-    expect(logAction).toHaveBeenCalledWith('Bob', 'JOIN_GAME', 'Game code: GAME123', 'GAME123');
-    expect(res.json).toHaveBeenCalledWith({ message: 'Joined game successfully' });
+    expect(logAction).toHaveBeenCalledWith(
+      'Bob',
+      'JOIN_GAME',
+      'Game code: GAME123',
+      'GAME123'
+    );
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Joined game successfully',
+    });
   });
 
   it('should return 400 if name is missing', async () => {
@@ -119,7 +130,9 @@ describe('joinGame controller', () => {
     await gameController.joinGame(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Name and game code are required' });
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Name and game code are required',
+    });
     expect(gameModel.joinGame).not.toHaveBeenCalled();
     expect(logAction).not.toHaveBeenCalled();
   });
@@ -130,7 +143,9 @@ describe('joinGame controller', () => {
     await gameController.joinGame(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Name and game code are required' });
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Name and game code are required',
+    });
     expect(gameModel.joinGame).not.toHaveBeenCalled();
     expect(logAction).not.toHaveBeenCalled();
   });
@@ -146,7 +161,6 @@ describe('joinGame controller', () => {
   });
 });
 
-
 describe('getPlayers controller', () => {
   let req, res;
 
@@ -154,7 +168,7 @@ describe('getPlayers controller', () => {
     req = { params: { gameCode: 'GAME123' } };
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
     };
   });
 
@@ -163,10 +177,7 @@ describe('getPlayers controller', () => {
   });
 
   it('should fetch players by gameCode and respond with JSON', async () => {
-    const mockPlayers = [
-      { userId: 'player1' },
-      { userId: 'player2' }
-    ];
+    const mockPlayers = [{ userId: 'player1' }, { userId: 'player2' }];
     gameModel.getPlayersByGameCode.mockResolvedValue(mockPlayers);
 
     await gameController.getPlayers(req, res);
@@ -197,12 +208,12 @@ describe('startGame controller', () => {
       body: {
         gameCode: 'GAME123',
         gameMode: 'online',
-        playerName: 'Alice'
-      }
+        playerName: 'Alice',
+      },
     };
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
     };
 
     // Mock resolved values for async functions
@@ -286,13 +297,14 @@ describe('startGame controller', () => {
   });
 });
 jest.mock('../src/controllers/gameController', () => {
-  const originalModule = jest.requireActual('../src/controllers/gameController');
+  const originalModule = jest.requireActual(
+    '../src/controllers/gameController'
+  );
   return {
     ...originalModule,
     startDescribingPhase: jest.fn(),
   };
 });
-
 
 describe('getPlayerWord controller', () => {
   let req, res;
@@ -301,12 +313,12 @@ describe('getPlayerWord controller', () => {
     req = {
       params: {
         gameCode: 'GAME123',
-        playerName: 'Alice'
-      }
+        playerName: 'Alice',
+      },
     };
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
     };
   });
 
@@ -320,8 +332,14 @@ describe('getPlayerWord controller', () => {
 
     await gameController.getPlayerWord(req, res);
 
-    expect(gameModel.getPlayerByNameAndGameCode).toHaveBeenCalledWith('Alice', 'GAME123');
-    expect(res.json).toHaveBeenCalledWith({ word: 'Apple', role: 'undercover' });
+    expect(gameModel.getPlayerByNameAndGameCode).toHaveBeenCalledWith(
+      'Alice',
+      'GAME123'
+    );
+    expect(res.json).toHaveBeenCalledWith({
+      word: 'Apple',
+      role: 'undercover',
+    });
   });
 
   it('should return 404 if player not found', async () => {
@@ -334,11 +352,15 @@ describe('getPlayerWord controller', () => {
   });
 
   it('should return 500 if model throws an error', async () => {
-    gameModel.getPlayerByNameAndGameCode.mockRejectedValue(new Error('DB error'));
+    gameModel.getPlayerByNameAndGameCode.mockRejectedValue(
+      new Error('DB error')
+    );
 
     await gameController.getPlayerWord(req, res);
 
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Failed to fetch player data' });
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Failed to fetch player data',
+    });
   });
 });
