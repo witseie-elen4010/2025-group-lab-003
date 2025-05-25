@@ -6,8 +6,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script defer src="/notifications.js?v=9"></script>
-  <script defer src="/frontend.js?v=9"></script>
+  <script defer src="/notifications.js?v=8"></script>
+  <script defer src="/frontend.js?v=8"></script>
 </head>
 <body class="container py-4">
   <!-- Include notifications container -->
@@ -19,44 +19,58 @@
     pointer-events: none;
   "></div>
 
-  <h1 class="text-center mb-4">🎭 Incognito Game</h1>
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <h1 class="text-center mb-4">🎭 Incognito Game</h1>
 
-  <!-- Input for player name -->
-  <div class="mb-3">
-    <input type="text" id="playerName" class="form-control" placeholder="Enter your name">
+      <!-- Input for player name -->
+      <div class="mb-3">
+        <label for="playerName" class="form-label">Player Name</label>
+        <input type="text" id="playerName" class="form-control" placeholder="Enter your name">
+      </div>
+
+      <!-- Buttons for Create and Join Game -->
+      <div class="mb-3 d-grid gap-2">
+        <button id="createGameBtn" onclick="createGame()" class="btn btn-warning">Create Game</button>
+        <button id="joinGameBtn" class="btn btn-primary">Join Game</button>
+      </div>
+
+      <!-- Hidden join input section -->
+      <div id="joinGameInputSection" class="mb-3 d-none">
+        <label for="gameCodeInput" class="form-label">Game Code</label>
+        <div class="input-group">
+          <input type="text" id="gameCodeInput" class="form-control" placeholder="Enter Game Code">
+          <button id="confirmJoinBtn" class="btn btn-primary">Join</button>
+        </div>
+      </div>
+
+      <!-- Game Mode dropdown menu, hidden by default -->
+      <div id="gameModeContainer" class="mb-3 d-none">
+        <label for="gameMode" class="form-label">Game Mode</label>
+        <select id="gameMode" class="form-select">
+          <option value="online" selected>Online</option>
+          <option value="inperson">In-Person</option>
+        </select>
+      </div>
+    </div>
   </div>
-
-  <!-- Buttons for Create and Join Game -->
-  <div class="mb-3 d-flex flex-wrap gap-2">
-    <button id="createGameBtn" onclick="createGame()" class="btn btn-warning">Create Game</button>
-
-  <!-- Initial Join Game button -->
-  <button id="joinGameBtn" class="btn btn-primary">Join Game</button>
-
-  <!-- Hidden join input section -->
-  <div id="joinGameInputSection" class="d-none">
-    <input type="text" id="gameCodeInput" class="form-control" placeholder="Enter Game Code">
-    <button id="confirmJoinBtn" class="btn btn-primary mt-2">Confirm Join</button>
-  </div>
-
-  <!-- Game Mode dropdown menu, hidden by default -->
-<div id="gameModeContainer" class="mb-3 d-none">
-  <label for="gameMode" class="form-label">Game Mode:</label>
-  <select id="gameMode" class="form-select">
-    <option value="online" selected>Online</option>
-    <option value="inperson">In-Person</option>
-  </select>
-</div>
-
-
 
   <!-- Lobby Section (hidden by default) -->
-  <div id="lobbySection" class="mt-4 d-none">
-    <button id="startGameBtn" class="btn btn-success mt-3 d-none" onclick="startGame()">
-      Start Game
-    </button>
-    <h2>In Lobby</h2>
-    <ul id="playerList" class="list-group"></ul>
+  <div id="lobbySection" class="row justify-content-center mt-4 d-none">
+    <div class="col-md-8 col-lg-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">In Lobby</h3>
+          <button id="startGameBtn" class="btn btn-success d-none" onclick="startGame()">
+            Start Game
+          </button>
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">Players</h5>
+          <ul id="playerList" class="list-group list-group-flush"></ul>
+        </div>
+      </div>
+    </div>
   </div>
 
 </body>
