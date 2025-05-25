@@ -13,6 +13,7 @@ router.get('/results/:gameCode', gameController.getGameResults);
 router.get('/is-admin/:gameCode/:playerName', gameController.isAdmin);
 router.get('/mode/:gameCode', gameController.getGameMode);
 router.get('/status/:gameCode', gameController.getGameStatus);
+router.post('/test-description-phase', gameController.testDescriptionPhase);
 
 
 

@@ -1,4 +1,5 @@
 const mssql = require('mssql');
+const path = require('path');
 require('dotenv').config();
 
 const connectionString = process.env.INCOGNITO_CONNECTION_STRING;
