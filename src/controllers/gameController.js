@@ -18,6 +18,7 @@ exports.createGame = async (req, res) => {
     console.log('Game created and creator joined successfully', gameCode);
     res.json({ message: 'Game created successfully', gameCode });
   } catch (err) {
+    console.error('Create game error:', err);
     res.status(500).json({ error: 'Error creating game' });
   }
 };
@@ -95,7 +96,7 @@ exports.startGame = async (req, res) => {
     console.log(`Scheduling description phase for game ${gameCode} to start in 10 seconds`);
     setTimeout(() => {
       console.log(`Starting automatic description phase for game ${gameCode}`);
-      startDescribingPhase(gameCode, io)
+      startDescribingPhase(gameCode, io);
     }, 5000); // 10 seconds delay
 
     res.json({ message: 'Game started', gameMode: gameMode || 'online' });
@@ -436,6 +437,7 @@ exports.testDescriptionPhase = async (req, res) => {
 
     res.json({ message: 'Test description phase started' });
   } catch (err) {
+    console.error('Test description phase error:', err);
     res.status(500).json({ error: 'Failed to start test description phase' });
   }
 };

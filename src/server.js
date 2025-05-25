@@ -1,6 +1,7 @@
 'use strict';
-const express = require('express');
 const path = require('path');
+require('dotenv').config();
+const express = require('express');
 
 const http = require('http');
 const { Server } = require('socket.io');
@@ -129,6 +130,19 @@ io.on('connection', (socket) => {
     }
     if (mode === 'inperson') return; // Ignore chat in in-person mode
 
+    // Import the description phase functions to check current speaker
+    const { activeDescriptionPhases } = require('./controllers/gameController');
+
+    // Check if we're in description phase and if this player can speak
+    const phaseData = activeDescriptionPhases.get(gameCode);
+    if (phaseData) {
+      const currentSpeaker = phaseData.players[phaseData.currentSpeakerIndex];
+      if (currentSpeaker !== playerName) {
+        console.log(`Blocked chat from ${playerName} - not their turn (current speaker: ${currentSpeaker})`);
+        return; // Don't allow non-speakers to chat during description phase
+      }
+    }
+
     // Get current round from DB(NEED TO IMPLEMENT)
     // For now, we'll just assume round 1
     let round = 1;
@@ -143,7 +157,7 @@ io.on('connection', (socket) => {
 
   // --- End chat handler ---
   socket.on('startGame', async (gameCode) => {
-  console.log(`Game ${gameCode} started`);
+  console.log(`Game ${gameCode} started via socket`);
 
   let mode = 'online';
   try {
@@ -164,6 +178,9 @@ io.on('connection', (socket) => {
     const sockets = await io.in(gameCode).fetchSockets();
     console.log(`Found ${sockets.length} connected sockets in room ${gameCode}`);
 
+    // Note: Description phase is triggered by HTTP route, not socket event
+    // This prevents duplicate triggers
+
   } catch (err) {
     console.error('Error getting players for game start notification:', err);
     // Still try to emit the event
@@ -178,5 +195,8 @@ io.on('connection', (socket) => {
 });
 
 const port = process.env.PORT || 3000;
-server.listen(port, () => console.log('Server running on port', port));
+server.listen(port, () => {
+  console.log('Server running on port', port);
+  console.log('Environment loaded:', process.env.INCOGNITO_CONNECTION_STRING ? 'DB connection string found' : 'DB connection string missing');
+});
 

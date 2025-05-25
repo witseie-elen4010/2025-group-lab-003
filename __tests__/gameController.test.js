@@ -189,6 +189,102 @@ describe('getPlayers controller', () => {
   });
 });
 
+describe('startGame controller', () => {
+  let req, res;
+
+  beforeEach(() => {
+    req = {
+      body: {
+        gameCode: 'GAME123',
+        gameMode: 'online',
+        playerName: 'Alice'
+      }
+    };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+
+    // Mock resolved values for async functions
+    gameModel.assignRoles.mockResolvedValue();
+    gameModel.getCurrentRound.mockResolvedValue(1);
+    gameModel.assignWordsForRound.mockResolvedValue();
+    gameModel.updateGameMode.mockResolvedValue();
+    gameModel.startGame.mockResolvedValue();
+    logAction.mockResolvedValue();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  /*it('should start game and update mode when gameMode is provided', async () => {
+    await gameController.startGame(req, res);
+
+    expect(gameModel.assignRoles).toHaveBeenCalledWith('GAME123');
+    expect(gameModel.getCurrentRound).toHaveBeenCalledWith('GAME123');
+    expect(gameModel.assignWordsForRound).toHaveBeenCalledWith('GAME123', 1);
+    expect(gameModel.updateGameMode).toHaveBeenCalledWith('GAME123', 'online');
+    expect(gameModel.startGame).toHaveBeenCalledWith('GAME123');
+    expect(logAction).toHaveBeenCalledWith(
+      'Alice',
+      'START_GAME',
+      'Started game GAME123 with mode online',
+      'GAME123'
+    );
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Game started',
+      gameMode: 'online'
+    });
+  });
+
+  it('should start game and default gameMode to online if not provided', async () => {
+    req.body.gameMode = undefined;
+
+    await gameController.startGame(req, res);
+
+    expect(gameModel.assignRoles).toHaveBeenCalledWith('GAME123');
+    expect(gameModel.getCurrentRound).toHaveBeenCalledWith('GAME123');
+    expect(gameModel.assignWordsForRound).toHaveBeenCalledWith('GAME123', 1);
+    expect(gameModel.updateGameMode).not.toHaveBeenCalled();
+    expect(gameModel.startGame).toHaveBeenCalledWith('GAME123');
+    expect(logAction).toHaveBeenCalledWith(
+      'Alice',
+      'START_GAME',
+      'Started game GAME123 with mode undefined',
+      'GAME123'
+    );
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Game started',
+      gameMode: 'online' // default value used in your controller response
+    });
+  });*/
+
+  it('should return 400 if gameCode is missing', async () => {
+    req.body.gameCode = undefined;
+
+    await gameController.startGame(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Game code is required' });
+
+    expect(gameModel.assignRoles).not.toHaveBeenCalled();
+    expect(gameModel.getCurrentRound).not.toHaveBeenCalled();
+    expect(gameModel.assignWordsForRound).not.toHaveBeenCalled();
+    expect(gameModel.updateGameMode).not.toHaveBeenCalled();
+    expect(gameModel.startGame).not.toHaveBeenCalled();
+    expect(logAction).not.toHaveBeenCalled();
+  });
+
+  it('should return 500 if an error occurs', async () => {
+    gameModel.assignRoles.mockRejectedValue(new Error('DB failure'));
+
+    await gameController.startGame(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Failed to start game' });
+  });
+});
 jest.mock('../src/controllers/gameController', () => {
   const originalModule = jest.requireActual('../src/controllers/gameController');
   return {

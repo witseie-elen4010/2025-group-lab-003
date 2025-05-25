@@ -33,7 +33,30 @@ let gameMode = '';
 
 // CREATE GAME
 async function createGame() {
-  playerName = document.getElementById('playerName').value;
+  playerName = document.getElementById('playerName').value.trim();
+
+  console.log('Attempting to create game with player:', playerName);
+
+  // Validate input
+  if (!playerName) {
+    showErrorNotification('Please enter your name first!', {
+      title: '❌ Name Required'
+    });
+    return;
+  }
+
+  const createGameBtn = document.getElementById('createGameBtn');
+  const joinGameBtn = document.getElementById('joinGameBtn');
+
+  // Disable and hide buttons immediately on click
+  if (createGameBtn) {
+    createGameBtn.disabled = true;
+    createGameBtn.classList.add('d-none');
+  }
+  if (joinGameBtn) {
+    joinGameBtn.disabled = true;
+    joinGameBtn.classList.add('d-none');
+  }
 
   try {
     const res = await fetch('/api/game/create', {
@@ -62,10 +85,28 @@ async function createGame() {
       // SHOW game mode dropdown here after game creation
       document.getElementById('gameModeContainer').classList.remove('d-none');
     } else {
+      // Re-enable buttons on error
+      if (createGameBtn) {
+        createGameBtn.disabled = false;
+        createGameBtn.classList.remove('d-none');
+      }
+      if (joinGameBtn) {
+        joinGameBtn.disabled = false;
+        joinGameBtn.classList.remove('d-none');
+      }
       const errorData = await res.json();
       throw new Error(errorData.error || 'Failed to create game');
     }
   } catch (e) {
+    // Re-enable buttons on exception
+    if (createGameBtn) {
+      createGameBtn.disabled = false;
+      createGameBtn.classList.remove('d-none');
+    }
+    if (joinGameBtn) {
+      joinGameBtn.disabled = false;
+      joinGameBtn.classList.remove('d-none');
+    }
     console.error('Game creation error:', e.message);
     showErrorNotification(e.message, {
       title: '❌ Game Creation Failed'
@@ -79,31 +120,66 @@ document.addEventListener('DOMContentLoaded', () => {
   const confirmJoinBtn = document.getElementById('confirmJoinBtn');
 
   // When user clicks "Join Game", show input & confirm button, hide the initial button
-  joinGameBtn.addEventListener('click', () => {
-    joinGameBtn.classList.add('d-none');
-    joinGameInputSection.classList.remove('d-none');
-  });
+  if (joinGameBtn && joinGameInputSection) {
+    joinGameBtn.addEventListener('click', () => {
+      joinGameBtn.classList.add('d-none');
+      joinGameInputSection.classList.remove('d-none');
+    });
+  }
 
-  confirmJoinBtn.addEventListener('click', () => {
-    confirmJoinBtn.disabled = true;
-  });
-
-  // When user clicks confirm, call joinGame()
-  confirmJoinBtn.addEventListener('click', () => {
-    joinGame();
-  });
+  if (confirmJoinBtn) {
+    confirmJoinBtn.addEventListener('click', () => {
+      confirmJoinBtn.disabled = true; // Disable confirm join button on click
+      joinGame();
+    });
+  }
 });
 
 // JOIN GAME
 async function joinGame() {
-  playerName = document.getElementById('playerName').value;
-  gameCode = document.getElementById('gameCodeInput').value.toUpperCase();
+  playerName = document.getElementById('playerName').value.trim();
+  gameCode = document.getElementById('gameCodeInput').value.trim().toUpperCase();
+
+  console.log('Attempting to join game:', { playerName, gameCode });
+
+  // Validate inputs
+  if (!playerName) {
+    showErrorNotification('Please enter your name!', {
+      title: '❌ Name Required'
+    });
+    return;
+  }
+
+  if (!gameCode) {
+    showErrorNotification('Please enter a game code!', {
+      title: '❌ Game Code Required'
+    });
+    return;
+  }
+
+  const confirmJoinBtn = document.getElementById('confirmJoinBtn');
+  const createGameBtn = document.getElementById('createGameBtn');
+  const joinGameBtn = document.getElementById('joinGameBtn');
+
+  // Disable and hide relevant buttons
+  if (confirmJoinBtn) {
+    confirmJoinBtn.disabled = true;
+    confirmJoinBtn.classList.add('d-none');
+  }
+  if (createGameBtn) {
+    createGameBtn.disabled = true;
+    createGameBtn.classList.add('d-none');
+  }
+  if (joinGameBtn) {
+    joinGameBtn.disabled = true;
+    joinGameBtn.classList.add('d-none');
+  }
 
   try {
     const res = await fetch('/api/game/join', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: playerName, gameCode})
+      body: JSON.stringify({ name: playerName, gameCode })
     });
 
     if (res.ok) {
@@ -113,6 +189,7 @@ async function joinGame() {
       });
       document.getElementById('lobbySection').classList.remove('d-none');
       document.getElementById('gameCodeInput').classList.remove('d-none');
+
       // Tell backend we joined the game room
       socket.emit('joinGame', gameCode, playerName);
 
@@ -121,10 +198,36 @@ async function joinGame() {
 
       //await loadLobby(gameCode); // Initial load
     } else {
+      // Re-enable buttons on error
+      if (confirmJoinBtn) {
+        confirmJoinBtn.disabled = false;
+        confirmJoinBtn.classList.remove('d-none');
+      }
+      if (createGameBtn) {
+        createGameBtn.disabled = false;
+        createGameBtn.classList.remove('d-none');
+      }
+      if (joinGameBtn) {
+        joinGameBtn.disabled = false;
+        joinGameBtn.classList.remove('d-none');
+      }
       const errorData = await res.json();
       throw new Error(errorData.error || 'Failed to join game');
     }
   } catch (err) {
+    // Re-enable buttons on exception
+    if (confirmJoinBtn) {
+      confirmJoinBtn.disabled = false;
+      confirmJoinBtn.classList.remove('d-none');
+    }
+    if (createGameBtn) {
+      createGameBtn.disabled = false;
+      createGameBtn.classList.remove('d-none');
+    }
+    if (joinGameBtn) {
+      joinGameBtn.disabled = false;
+      joinGameBtn.classList.remove('d-none');
+    }
     console.error('Join game error:', err.message);
     showErrorNotification(err.message, {
       title: '❌ Failed to Join Game'
