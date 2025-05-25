@@ -141,7 +141,6 @@ exports.submitVote = async (req, res) => {
 
     res.json({ message: 'Vote recorded' });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message || 'Failed to record vote' });
   }
 };
