@@ -72,7 +72,7 @@ exports.startGame = async (req, res) => {
   }
 
   try {
-  
+
     await gameModel.assignRoles(gameCode);
     const round = await gameModel.getCurrentRound(gameCode);
     await gameModel.assignWordsForRound(gameCode, round);
@@ -130,6 +130,14 @@ exports.submitVote = async (req, res) => {
   }
 
   try {
+    // Check if we're in a revote and if this player is eligible to vote
+    const revoteState = activeRevotes.get(gameCode);
+    if (revoteState) {
+      if (!revoteState.eligibleVoters.includes(voterName)) {
+        return res.status(403).json({ error: 'You are not eligible to vote in this revote' });
+      }
+    }
+
     const voterId = await gameModel.getPlayerIdByUserId(gameCode, voterName);
     const targetId = await gameModel.getPlayerIdByUserId(gameCode, votedFor);
     const round = await gameModel.getCurrentRound(gameCode);
@@ -140,22 +148,44 @@ exports.submitVote = async (req, res) => {
     await logAction(voterName, 'VOTE', `Voted for ${votedFor} in game ${gameCode}`, gameCode);
 
     console.log(`Vote recorded: ${voterName} voted for ${votedFor}`);
-    const allVotesIn = await gameModel.haveAllPlayersVoted(gameCode, round);
-    console.log('All votes in!!!!!!');
+
+    // Check if we're in a revote state
+    const currentRevoteState = activeRevotes.get(gameCode);
+    let allVotesIn;
+
+    if (currentRevoteState && currentRevoteState.round === round) {
+      // We're in a revote - only check eligible voters
+      console.log(`Checking revote votes for eligible voters: ${currentRevoteState.eligibleVoters.join(', ')}`);
+      allVotesIn = await gameModel.haveEligibleVotersVoted(gameCode, round, currentRevoteState.eligibleVoters);
+    } else {
+      // Normal voting - check all active players
+      allVotesIn = await gameModel.haveAllPlayersVoted(gameCode, round);
+    }
+
+    console.log(`All votes in check: ${allVotesIn} for game ${gameCode}, round ${round}`);
 
     if (allVotesIn) {
-      console.log('All votes are in for round', round);
+      console.log(`All votes are in for round ${round} in game ${gameCode}`);
+
+      // Clear revote state if it exists
+      if (currentRevoteState) {
+        activeRevotes.delete(gameCode);
+        console.log(`Cleared revote state for game ${gameCode}`);
+      }
+
       const io = req.app.get('io');
       io.to(gameCode).emit('allVotesIn',  { message: 'All votes are in!' });
-      // TODO: Something to handle when all votes are in
-      // Call elimination logic right here
+
+      // Call elimination logic
       try {
+        console.log(`Starting elimination process for game ${gameCode}, round ${round}`);
         const eliminatedUserId = await eliminatePlayer(gameCode, round, io);
-        console.log(`Player eliminated: ${eliminatedUserId}`);
+        console.log(`Elimination result: ${eliminatedUserId ? `Player ${eliminatedUserId} eliminated` : 'Revote required'}`);
       } catch (elimErr) {
         /*console.error('Error during elimination:', elimErr);*/
       }
-      console.log('All votes are in for round', round);
+    } else {
+      console.log(`Not all votes in yet for game ${gameCode}, round ${round}`);
     }
 
     res.json({ message: 'Vote recorded' });
@@ -165,13 +195,88 @@ exports.submitVote = async (req, res) => {
 };
 
 async function eliminatePlayer(gameCode, round, io) {
+  console.log(`eliminatePlayer called for game ${gameCode}, round ${round}`);
+
   // Get vote counts for the round
   const voteCounts = await gameModel.getVoteCounts(gameCode, round);
+  console.log(`Vote counts retrieved:`, voteCounts);
+
   if (voteCounts.length === 0) {
     throw new Error('No votes found to eliminate');
   }
 
-  // Player with highest votes is first
+  // Check for draw (multiple players with same highest vote count)
+  const highestVoteCount = voteCounts[0].votesReceived;
+  const playersWithHighestVotes = voteCounts.filter(vote => vote.votesReceived === highestVoteCount);
+
+  console.log(`Highest vote count: ${highestVoteCount}, Players with highest votes: ${playersWithHighestVotes.length}`);
+
+  // If there's a draw, trigger revote
+  if (playersWithHighestVotes.length > 1) {
+    console.log(`Draw detected! ${playersWithHighestVotes.length} players tied with ${highestVoteCount} votes each`);
+
+    // Get all active players
+    const allActivePlayers = await gameModel.getActivePlayers(gameCode);
+    const allActivePlayerIds = allActivePlayers.map(p => p.userId);
+
+    // Get the tied players' userIds
+    const tiedPlayerIds = playersWithHighestVotes.map(vote => vote.targetId);
+    const tiedPlayers = [];
+    for (const playerId of tiedPlayerIds) {
+      const player = await gameModel.getPlayerById(playerId);
+      tiedPlayers.push(player.userId);
+    }
+
+    // Determine who can vote in revote
+    let eligibleVoters;
+    let revoteMessage;
+
+    if (tiedPlayers.length === allActivePlayers.length) {
+      // Special case for when all players are tied (like 3-player game)
+      if (tiedPlayers.length <= 3) {
+        // For small groups, each player votes between the other players (no self-voting)
+        eligibleVoters = allActivePlayerIds;
+        revoteMessage = `All players tied! Each player votes between: ${tiedPlayers.join(', ')} (no self-voting)`;
+        console.log(`All players tied in small group - special revote rules`);
+      } else {
+        // Large group - normal revote rules
+        eligibleVoters = allActivePlayerIds;
+        revoteMessage = `Everyone is tied! All players revote between: ${tiedPlayers.join(', ')}`;
+        console.log(`All players tied - everyone can revote`);
+      }
+    } else {
+      // Only non-tied players can vote
+      eligibleVoters = allActivePlayerIds.filter(playerId => !tiedPlayers.includes(playerId));
+      revoteMessage = `It's a draw! Only non-tied players (${eligibleVoters.join(', ')}) vote between: ${tiedPlayers.join(', ')}`;
+      console.log(`All active players: ${allActivePlayerIds.join(', ')}`);
+      console.log(`Tied players: ${tiedPlayers.join(', ')}`);
+      console.log(`Eligible voters: ${eligibleVoters.join(', ')}`);
+    }
+
+    // Store revote state
+    activeRevotes.set(gameCode, {
+      round: round,
+      eligibleVoters: eligibleVoters,
+      tiedPlayers: tiedPlayers
+    });
+
+    // Clear all votes for this round to allow revoting
+    await gameModel.clearVotesForRound(gameCode, round);
+    console.log(`Votes cleared for revote in game ${gameCode}, round ${round}`);
+
+    // Emit revote event to all clients
+    io.to(gameCode).emit('revoteRequired', {
+      message: revoteMessage,
+      tiedPlayers: tiedPlayers,
+      eligibleVoters: eligibleVoters,
+      round: round
+    });
+
+    console.log(`Revote event emitted for game ${gameCode}`);
+    return null; // No elimination this time, waiting for revote
+  }
+
+  // No draw - proceed with normal elimination
   const eliminatedPlayerId = voteCounts[0].targetId;
 
   // Mark player eliminated
@@ -211,14 +316,13 @@ async function eliminatePlayer(gameCode, round, io) {
       const round = await gameModel.getCurrentRound(gameCode);
       await gameModel.assignWordsForRound(gameCode, round);
 
-
       const currentRound = await gameModel.getCurrentRound(gameCode);
 
       // Start description phase for the new round
       console.log(`Starting description phase for round ${currentRound} in game ${gameCode}`);
       setTimeout(() => {
         startDescribingPhase(gameCode, io);
-      }, 10000); // Give players 3 seconds to see elimination result
+      }, 10000); // Give players 10 seconds to see elimination result
 
       // Notify players to reload the game page with new round info
       io.to(gameCode).emit('newRoundStarted', {
@@ -291,6 +395,9 @@ exports.getGameStatus = async (req, res) => {
 
 // Store active description phases
 const activeDescriptionPhases = new Map();
+
+// Store active revote states
+const activeRevotes = new Map();
 
 async function startDescribingPhase(gameCode, io) {
   const players = await gameModel.getActivePlayers(gameCode);
@@ -463,6 +570,3 @@ exports.disableGame = async (req, res) => {
 module.exports.startDescribingPhase = startDescribingPhase;
 module.exports.startDiscussionPhase = startDiscussionPhase;
 module.exports.activeDescriptionPhases = activeDescriptionPhases;
-
-
-

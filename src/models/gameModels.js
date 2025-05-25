@@ -145,7 +145,7 @@ exports.assignRoles = async (gameCode) => {
 
 // Load all word pairs from DB
 exports.loadWordPairsFromDB = async () => {
-  const db = require('../config/db');  
+  const db = require('../config/db');
   const pool = await db.poolPromise;
   const result = await pool.request()
     .query('SELECT undercoverWord, civilianWord FROM WordPairs');
@@ -154,7 +154,7 @@ exports.loadWordPairsFromDB = async () => {
 
 // Get all word pairs assigned so far for a game
 async function getUsedRoundsPairs(pool, gameCode) {
-  const db = require('../config/db');  
+  const db = require('../config/db');
   const result = await pool.request()
     .input('gameCode', db.sql.VarChar, gameCode)
     .query(`SELECT undercoverWord, civilianWord FROM RoundWords WHERE gameCode = @gameCode`);
@@ -175,7 +175,7 @@ function pickRandomPair(pairs) {
 }
 
 exports.assignWordsForRound = async (gameCode, round) => {
-  const db = require('../config/db');  
+  const db = require('../config/db');
   const pool = await db.poolPromise;
 
   // Load dictionary pairs from DB
@@ -528,6 +528,74 @@ exports.updateGameMode = async (gameCode, mode) => {
     .query(query);
 
   console.log(`Updated game mode to ${mode} for gameCode ${gameCode}`);
+};
+
+// Clear all votes for a given game and round to allow revoting
+exports.clearVotesForRound = async (gameCode, round) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  const query = `
+    DELETE FROM Votes
+    WHERE gameCode = @gameCode AND round = @round
+  `;
+
+  await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('round', db.sql.Int, round)
+    .query(query);
+
+  console.log(`Cleared votes for game ${gameCode}, round ${round}`);
+};
+
+// Check if all eligible voters have voted (for revote scenarios)
+exports.haveEligibleVotersVoted = async (gameCode, round, eligibleVoterUserIds) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  if (!eligibleVoterUserIds || eligibleVoterUserIds.length === 0) {
+    return false;
+  }
+
+  // Get player IDs for eligible voters
+  const eligibleVoterIds = [];
+  for (const userId of eligibleVoterUserIds) {
+    try {
+      const playerId = await exports.getPlayerIdByUserId(gameCode, userId);
+      eligibleVoterIds.push(playerId);
+    } catch (err) {
+      console.error(`Error getting player ID for ${userId}:`, err);
+    }
+  }
+
+  if (eligibleVoterIds.length === 0) {
+    return false;
+  }
+
+  // Count how many eligible voters have actually voted
+  const placeholders = eligibleVoterIds.map((_, index) => `@voterId${index}`).join(',');
+  const votesCountQuery = `
+    SELECT COUNT(DISTINCT voterId) AS votesCount
+    FROM Votes
+    WHERE gameCode = @gameCode AND round = @round AND voterId IN (${placeholders})
+  `;
+
+  const request = pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('round', db.sql.Int, round);
+
+  // Add each voter ID as a parameter
+  eligibleVoterIds.forEach((id, index) => {
+    request.input(`voterId${index}`, db.sql.Int, id);
+  });
+
+  const result = await request.query(votesCountQuery);
+
+  const votesCount = result.recordset[0].votesCount;
+  const expectedVotes = eligibleVoterUserIds.length;
+
+  console.log(`Eligible voters check: ${votesCount}/${expectedVotes} eligible voters have voted`);
+  return votesCount >= expectedVotes;
 };
 
 

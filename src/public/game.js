@@ -167,7 +167,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         showGameNotification('Get ready! Description phase will start in 10 seconds. Each player gets 1 minute to describe their word.', {
           title: '⏰ Description Phase Starting Soon',
           type: 'info',
-          duration: 8000
+          duration: 5000
         });
       } else {
         document.getElementById('playerWord').textContent = data.error || 'Could not load your word.';
@@ -345,6 +345,69 @@ socket.on('phaseChange', (data) => {
 
     // Show voting buttons
     startVote();
+  }
+});
+
+// Handle revote requirement
+socket.on('revoteRequired', (data) => {
+  showGameNotification(data.message, {
+    title: '🔄 Revote Required',
+    type: 'warning',
+    duration: 8000
+  });
+
+  // Clear and rebuild voting UI
+  const votingList = document.getElementById('votingList');
+  votingList.innerHTML = '';
+
+  // Check if current player is eligible to vote
+  const isEligibleVoter = data.eligibleVoters.includes(playerName);
+
+    if (isEligibleVoter) {
+      // Show voting buttons for tied players (excluding self if in small group)
+      const heading = document.createElement('h5');
+      heading.innerText = data.message || '🔄 Revote - Choose between:';
+      heading.className = 'text-warning mb-3';
+      votingList.appendChild(heading);
+
+      data.tiedPlayers.forEach(player => {
+        // Skip creating button if this is the current player in a small group revote
+        if (player !== playerName || data.tiedPlayers.length > 3) {
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-outline-danger m-1';
+          btn.innerText = `Vote ${player}`;
+          btn.onclick = () => {
+            showConfirmNotification(`Are you sure you want to vote for ${player}?`,
+              () => submitVote(player)
+            );
+          };
+          votingList.appendChild(btn);
+        }
+      });
+
+      // Add special instructions for small group revotes
+      if (data.tiedPlayers.length <= 3) {
+        const info = document.createElement('p');
+        info.className = 'text-muted small mt-2';
+        info.innerText = 'Note: You cannot vote for yourself in this revote';
+        votingList.appendChild(info);
+      }
+  } else {
+    // Player is not eligible to vote (they are tied)
+    const heading = document.createElement('h5');
+    heading.innerText = '⏳ Waiting for Revote';
+    heading.className = 'text-info mb-3';
+    votingList.appendChild(heading);
+
+    const message = document.createElement('p');
+    message.innerText = 'You are tied for elimination. Other players are voting to decide your fate.';
+    message.className = 'text-muted';
+    votingList.appendChild(message);
+
+    const eligibleVotersText = document.createElement('small');
+    eligibleVotersText.innerText = `Voters: ${data.eligibleVoters.join(', ')}`;
+    eligibleVotersText.className = 'text-secondary';
+    votingList.appendChild(eligibleVotersText);
   }
 });
 
