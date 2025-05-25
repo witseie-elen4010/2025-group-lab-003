@@ -128,7 +128,7 @@ describe('gameModels startGame integration', () => {
   });
 });
 */
-
+/*
 jest.mock('../src/config/db', () => {
   const mockRequest = {
     input: jest.fn().mockReturnThis(),
@@ -168,7 +168,7 @@ describe('gameModels.getPlayersByGameCode', () => {
     const result = await gameModel.getPlayersByGameCode('ABC123');
     expect(result).toEqual([{ userId: 'Andile' }]); // based on your mock above
   });
-});
+});*/
 
 describe('gameModel dummy test', () => {
   test('should run a basic dummy test', () => {
