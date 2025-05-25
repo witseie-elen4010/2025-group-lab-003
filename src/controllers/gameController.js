@@ -46,6 +46,7 @@ exports.joinGame = async (req, res) => {
     res.json({ message: 'Joined game successfully' });
   } catch (err) {
     //console.error('Join game error:', err);
+
     res.status(500).json({ error: 'Failed to join game' });
   }
 };
@@ -159,7 +160,6 @@ exports.submitVote = async (req, res) => {
 
     res.json({ message: 'Vote recorded' });
   } catch (err) {
-    //console.error(err);
     res.status(500).json({ error: err.message || 'Failed to record vote' });
   }
 };
@@ -246,7 +246,6 @@ exports.getGameResults = async (req, res) => {
       players: players
     });
   } catch (err) {
-    //console.error('Error fetching game results:', err);
     res.status(500).json({ error: 'Failed to fetch game results' });
   }
 };
@@ -258,7 +257,6 @@ exports.isAdmin = async (req, res) => {
     const adminId = await gameModel.getAdminUserId(gameCode);
     res.json({ admin: adminId === playerName });
   } catch (err) {
-    //console.error('Error checking admin:', err);
     res.status(500).json({ error: 'Failed to verify admin status' });
   }
 };
@@ -268,7 +266,6 @@ exports.getGameMode = async (req, res) => {
     const mode = await gameModel.getGameMode(req.params.gameCode);
     res.json({ mode });
   } catch (err) {
-    //console.error('Failed to fetch game mode', err);
     res.status(500).json({ error: 'Failed to fetch game mode' });
   }
 };
@@ -288,7 +285,6 @@ exports.getGameStatus = async (req, res) => {
       winner: gameState.winner
     });
   } catch (err) {
-    //console.error('Error fetching game status:', err);
     res.status(500).json({ error: 'Failed to fetch game status' });
   }
 };
