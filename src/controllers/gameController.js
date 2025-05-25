@@ -18,7 +18,7 @@ exports.createGame = async (req, res) => {
     console.log('Game created and creator joined successfully', gameCode);
     res.json({ message: 'Game created successfully', gameCode });
   } catch (err) {
-    console.error('Create game error:', err);
+   //console.error('Create game error:', err);
     res.status(500).json({ error: 'Error creating game' });
   }
 };
@@ -45,7 +45,8 @@ exports.joinGame = async (req, res) => {
 
     res.json({ message: 'Joined game successfully' });
   } catch (err) {
-    console.error('Join game error:', err);
+    //console.error('Join game error:', err);
+
     res.status(500).json({ error: 'Failed to join game' });
   }
 };
@@ -181,7 +182,7 @@ exports.submitVote = async (req, res) => {
         const eliminatedUserId = await eliminatePlayer(gameCode, round, io);
         console.log(`Elimination result: ${eliminatedUserId ? `Player ${eliminatedUserId} eliminated` : 'Revote required'}`);
       } catch (elimErr) {
-        console.error('Error during elimination:', elimErr);
+        /*console.error('Error during elimination:', elimErr);*/
       }
     } else {
       console.log(`Not all votes in yet for game ${gameCode}, round ${round}`);
@@ -189,7 +190,6 @@ exports.submitVote = async (req, res) => {
 
     res.json({ message: 'Vote recorded' });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message || 'Failed to record vote' });
   }
 };
@@ -350,7 +350,6 @@ exports.getGameResults = async (req, res) => {
       players: players
     });
   } catch (err) {
-    console.error('Error fetching game results:', err);
     res.status(500).json({ error: 'Failed to fetch game results' });
   }
 };
@@ -362,7 +361,6 @@ exports.isAdmin = async (req, res) => {
     const adminId = await gameModel.getAdminUserId(gameCode);
     res.json({ admin: adminId === playerName });
   } catch (err) {
-    console.error('Error checking admin:', err);
     res.status(500).json({ error: 'Failed to verify admin status' });
   }
 };
@@ -372,7 +370,6 @@ exports.getGameMode = async (req, res) => {
     const mode = await gameModel.getGameMode(req.params.gameCode);
     res.json({ mode });
   } catch (err) {
-    console.error('Failed to fetch game mode', err);
     res.status(500).json({ error: 'Failed to fetch game mode' });
   }
 };
@@ -392,7 +389,6 @@ exports.getGameStatus = async (req, res) => {
       winner: gameState.winner
     });
   } catch (err) {
-    console.error('Error fetching game status:', err);
     res.status(500).json({ error: 'Failed to fetch game status' });
   }
 };
@@ -549,10 +545,26 @@ exports.testDescriptionPhase = async (req, res) => {
 
     res.json({ message: 'Test description phase started' });
   } catch (err) {
-    console.error('Test description phase error:', err);
+    // console.error('Test description phase error:', err);
     res.status(500).json({ error: 'Failed to start test description phase' });
   }
 };
+
+exports.disableGame = async (req, res) => {
+  const { gameCode } = req.body;
+
+  if (!gameCode) {
+    return res.status(400).json({ error: 'Game code required' });
+  }
+
+  try {
+    await gameModel.disableGame(gameCode);
+    res.json({ message: `Game ${gameCode} disabled successfully` });
+  } catch (err) {
+    res.status(500).json({ error: 'Error disabling game' });
+  }
+};
+
 
 // Export the description phase functions and data for testing and server access
 module.exports.startDescribingPhase = startDescribingPhase;

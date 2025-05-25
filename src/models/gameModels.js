@@ -7,11 +7,27 @@ exports.createGame = async (creatorName, mode = 'online') => {
   const db = require('../config/db');
   const gameCode = generateCode();
 
+const query = `
+  INSERT INTO GameState (gameCode, round, gameStarted, winner, log, mode, adminUserId, isActive)
+  VALUES (@gameCode, 1, 0, NULL, '[]', @mode, @creatorName, 1)
+`;
+
+/*exports.disableGame = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
   const query = `
-    INSERT INTO GameState (gameCode, round, gameStarted, winner, log, mode, adminUserId)
-    VALUES (@gameCode, 1, 0, NULL, '[]', @mode, @creatorName)
+    UPDATE GameState
+    SET isActive = 0
+    WHERE gameCode = @gameCode
   `;
 
+  await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(query);
+};*/
+
+///////////
   const pool = await db.poolPromise;
   await pool.request()
     .input('gameCode', db.sql.VarChar, gameCode)
@@ -22,10 +38,37 @@ exports.createGame = async (creatorName, mode = 'online') => {
   return gameCode;
 };
 
+exports.disableGame = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
+
+  const query = `
+    UPDATE GameState
+    SET isActive = 0
+    WHERE gameCode = @gameCode
+  `;
+
+  await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(query);
+};
 
 exports.joinGame = async (playerName, gameCode) => {
     const db = require('../config/db');
     const pool = await db.poolPromise;
+
+    // Check if game exists and is active
+    const result = await pool.request()
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .query('SELECT isActive FROM GameState WHERE gameCode = @gameCode');
+
+    if (result.recordset.length === 0) {
+      throw new Error('Game code not found');
+    }
+
+    if (result.recordset[0].isActive === 0) {
+      throw new Error('Game is closed and cannot be joined');
+    }
 
     const query = `
         INSERT INTO Players (userId, gameCode, role, word, status)

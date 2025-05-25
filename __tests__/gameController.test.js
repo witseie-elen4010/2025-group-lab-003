@@ -285,6 +285,14 @@ describe('startGame controller', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Failed to start game' });
   });
 });
+jest.mock('../src/controllers/gameController', () => {
+  const originalModule = jest.requireActual('../src/controllers/gameController');
+  return {
+    ...originalModule,
+    startDescribingPhase: jest.fn(),
+  };
+});
+
 
 describe('getPlayerWord controller', () => {
   let req, res;
