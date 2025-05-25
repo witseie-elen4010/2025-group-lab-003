@@ -30,6 +30,12 @@ exports.joinGame = async (req, res) => {
   }
 
   try {
+    // Check if player already in game
+    const existingPlayer = await gameModel.getPlayerByNameAndGameCode(name, gameCode);
+    if (existingPlayer) {
+      return res.status(400).json({ error: 'Player has already joined this game. Try a different name.' });
+    }
+
     await gameModel.joinGame(name, gameCode);
     console.log(`${name} joined game ${gameCode}`);
 
