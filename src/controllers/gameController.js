@@ -71,7 +71,10 @@ exports.startGame = async (req, res) => {
   }
 
   try {
-    await gameModel.assignRolesAndWords(gameCode);
+  
+    await gameModel.assignRoles(gameCode);
+    const round = await gameModel.getCurrentRound(gameCode);
+    await gameModel.assignWordsForRound(gameCode, round);
 
     // Save the selected gameMode to the DB here:
     if (gameMode) {
@@ -205,7 +208,9 @@ async function eliminatePlayer(gameCode, round, io) {
     } else {
       // Continue to next round
       await gameModel.incrementRound(gameCode);
-      await gameModel.assignNewWords(gameCode);
+      const round = await gameModel.getCurrentRound(gameCode);
+      await gameModel.assignWordsForRound(gameCode, round);
+
 
       const currentRound = await gameModel.getCurrentRound(gameCode);
 

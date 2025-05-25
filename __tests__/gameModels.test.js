@@ -127,68 +127,6 @@ describe('gameModels startGame integration', () => {
     expect(result.recordset[0].gameStarted).toBe(true);
   });
 });
-
-describe('assignRolesAndWords integration tests', () => {
-  let insertedGameCode;
-
-  beforeEach(async () => {
-    insertedGameCode = await gameModel.createGame('RoleAssignTester');
-  });
-
-  afterEach(async () => {
-    if (insertedGameCode) {
-      // Clean up players
-      await pool.request()
-        .input('gameCode', db.sql.VarChar, insertedGameCode)
-        .query('DELETE FROM Players WHERE gameCode = @gameCode');
-
-      // Clean up game
-      await pool.request()
-        .input('gameCode', db.sql.VarChar, insertedGameCode)
-        .query('DELETE FROM GameState WHERE gameCode = @gameCode');
-    }
-  });
-
-  it('should assign exactly one undercover and others civilian with correct words', async () => {
-    // Add 4 players to the game
-    const players = ['Player1', 'Player2', 'Player3', 'Player4'];
-    for (const player of players) {
-      await gameModel.joinGame(player, insertedGameCode);
-    }
-
-    // Run the role assignment
-    await gameModel.assignRolesAndWords(insertedGameCode);
-
-    // Query back all players with roles and words
-    const result = await pool.request()
-      .input('gameCode', db.sql.VarChar, insertedGameCode)
-      .query('SELECT userId, role, word FROM Players WHERE gameCode = @gameCode');
-
-    const assignedPlayers = result.recordset;
-
-    // Exactly 4 players should be assigned
-    expect(assignedPlayers.length).toBe(4);
-
-    // Count how many undercover and civilian
-    const undercoverCount = assignedPlayers.filter(p => p.role === 'undercover').length;
-    const civilianCount = assignedPlayers.filter(p => p.role === 'civilian').length;
-
-    expect(undercoverCount).toBe(1);
-    expect(civilianCount).toBe(3);
-
-    // Check that the words correspond to roles correctly
-    assignedPlayers.forEach(player => {
-      if (player.role === 'undercover') {
-        expect(player.word).toBe('Apple');
-      } else if (player.role === 'civilian') {
-        expect(player.word).toBe('Banana');
-      } else {
-        // Should never happen
-        throw new Error(`Unexpected role assigned: ${player.role}`);
-      }
-    });
-  }, 20000);
-});
 */
 
 describe('gameModel dummy test', () => {

@@ -189,7 +189,6 @@ describe('getPlayers controller', () => {
   });
 });
 
-
 describe('startGame controller', () => {
   let req, res;
 
@@ -206,8 +205,12 @@ describe('startGame controller', () => {
       json: jest.fn()
     };
 
-    gameModel.assignRolesAndWords.mockResolvedValue();
+    // Mock resolved values for async functions
+    gameModel.assignRoles.mockResolvedValue();
+    gameModel.getCurrentRound.mockResolvedValue(1);
+    gameModel.assignWordsForRound.mockResolvedValue();
     gameModel.updateGameMode.mockResolvedValue();
+    gameModel.startGame.mockResolvedValue();
     logAction.mockResolvedValue();
   });
 
@@ -218,8 +221,11 @@ describe('startGame controller', () => {
   it('should start game and update mode when gameMode is provided', async () => {
     await gameController.startGame(req, res);
 
-    expect(gameModel.assignRolesAndWords).toHaveBeenCalledWith('GAME123');
+    expect(gameModel.assignRoles).toHaveBeenCalledWith('GAME123');
+    expect(gameModel.getCurrentRound).toHaveBeenCalledWith('GAME123');
+    expect(gameModel.assignWordsForRound).toHaveBeenCalledWith('GAME123', 1);
     expect(gameModel.updateGameMode).toHaveBeenCalledWith('GAME123', 'classic');
+    expect(gameModel.startGame).toHaveBeenCalledWith('GAME123');
     expect(logAction).toHaveBeenCalledWith(
       'Alice',
       'START_GAME',
@@ -237,8 +243,11 @@ describe('startGame controller', () => {
 
     await gameController.startGame(req, res);
 
-    expect(gameModel.assignRolesAndWords).toHaveBeenCalledWith('GAME123');
+    expect(gameModel.assignRoles).toHaveBeenCalledWith('GAME123');
+    expect(gameModel.getCurrentRound).toHaveBeenCalledWith('GAME123');
+    expect(gameModel.assignWordsForRound).toHaveBeenCalledWith('GAME123', 1);
     expect(gameModel.updateGameMode).not.toHaveBeenCalled();
+    expect(gameModel.startGame).toHaveBeenCalledWith('GAME123');
     expect(logAction).toHaveBeenCalledWith(
       'Alice',
       'START_GAME',
@@ -247,7 +256,7 @@ describe('startGame controller', () => {
     );
     expect(res.json).toHaveBeenCalledWith({
       message: 'Game started',
-      gameMode: 'online'
+      gameMode: 'online' // default value used in your controller response
     });
   });
 
@@ -259,13 +268,16 @@ describe('startGame controller', () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error: 'Game code is required' });
 
-    expect(gameModel.assignRolesAndWords).not.toHaveBeenCalled();
+    expect(gameModel.assignRoles).not.toHaveBeenCalled();
+    expect(gameModel.getCurrentRound).not.toHaveBeenCalled();
+    expect(gameModel.assignWordsForRound).not.toHaveBeenCalled();
     expect(gameModel.updateGameMode).not.toHaveBeenCalled();
+    expect(gameModel.startGame).not.toHaveBeenCalled();
     expect(logAction).not.toHaveBeenCalled();
   });
 
-  it('should return 500 if an error occurs in try-catch', async () => {
-    gameModel.assignRolesAndWords.mockRejectedValue(new Error('DB failure'));
+  it('should return 500 if an error occurs', async () => {
+    gameModel.assignRoles.mockRejectedValue(new Error('DB failure'));
 
     await gameController.startGame(req, res);
 
@@ -273,7 +285,6 @@ describe('startGame controller', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Failed to start game' });
   });
 });
-
 
 describe('getPlayerWord controller', () => {
   let req, res;
