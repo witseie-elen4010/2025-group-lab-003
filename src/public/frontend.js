@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // When user clicks "Join Game", show input & confirm button, hide the initial button
   if (joinGameBtn && joinGameInputSection) {
-    joinGameBtn.addEventListener('click', () => {
+      joinGameBtn.addEventListener('click', () => {
       joinGameBtn.classList.add('d-none');
       joinGameInputSection.classList.remove('d-none');
     });
@@ -129,8 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (confirmJoinBtn) {
     confirmJoinBtn.addEventListener('click', () => {
-      confirmJoinBtn.disabled = true; // Disable confirm join button on click
-      joinGame();
+    //confirmJoinBtn.disabled = true; // Disable confirm join button on click
+    joinGame();
     });
   }
 });
@@ -238,6 +238,11 @@ async function joinGame() {
 async function startGame() {
   // Read game mode from dropdown when starting game
   gameMode = document.getElementById('gameMode').value;
+  const startGameBtn = document.getElementById('startGameBtn');
+
+  if (startGameBtn) {
+    startGameBtn.disabled = true;
+  }
 
   try {
     const res = await fetch(`/api/game/start`, {
@@ -254,10 +259,12 @@ async function startGame() {
       });
       socket.emit('startGame', gameCode);
     } else {
+      startGameBtn.disabled = false;
       const errorData = await res.json();
       throw new Error(errorData.error || 'Failed to start game');
     }
   } catch (err) {
+    startGameBtn.disabled = false;
     console.error('Start game error:', err.message);
     showErrorNotification('Could not start game.');
   }

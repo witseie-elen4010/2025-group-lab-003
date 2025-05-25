@@ -167,7 +167,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         showGameNotification('Get ready! Description phase will start in 10 seconds. Each player gets 1 minute to describe their word.', {
           title: '⏰ Description Phase Starting Soon',
           type: 'info',
-          duration: 8000
+          duration: 5000
         });
       } else {
         document.getElementById('playerWord').textContent = data.error || 'Could not load your word.';
