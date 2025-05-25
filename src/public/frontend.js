@@ -33,7 +33,17 @@ let gameMode = '';
 
 // CREATE GAME
 async function createGame() {
-  playerName = document.getElementById('playerName').value;
+  playerName = document.getElementById('playerName').value.trim();
+
+  console.log('Attempting to create game with player:', playerName);
+
+  // Validate input
+  if (!playerName) {
+    showErrorNotification('Please enter your name first!', {
+      title: '❌ Name Required'
+    });
+    return;
+  }
 
   const createGameBtn = document.getElementById('createGameBtn');
   const joinGameBtn = document.getElementById('joinGameBtn');
@@ -127,8 +137,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // JOIN GAME
 async function joinGame() {
-  playerName = document.getElementById('playerName').value;
-  gameCode = document.getElementById('gameCodeInput').value.toUpperCase();
+  playerName = document.getElementById('playerName').value.trim();
+  gameCode = document.getElementById('gameCodeInput').value.trim().toUpperCase();
+
+  console.log('Attempting to join game:', { playerName, gameCode });
+
+  // Validate inputs
+  if (!playerName) {
+    showErrorNotification('Please enter your name!', {
+      title: '❌ Name Required'
+    });
+    return;
+  }
+
+  if (!gameCode) {
+    showErrorNotification('Please enter a game code!', {
+      title: '❌ Game Code Required'
+    });
+    return;
+  }
 
   const confirmJoinBtn = document.getElementById('confirmJoinBtn');
   const createGameBtn = document.getElementById('createGameBtn');

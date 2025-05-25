@@ -4,6 +4,10 @@ const gameCode = urlParams.get('gameCode');
 const playerName = urlParams.get('playerName');
 let playerRole = null;
 
+// Discussion phase variables
+let gamePhase = 'waiting'; // 'waiting', 'description', 'discussion', 'voting'
+let currentSpeaker = null;
+
 // Get game mode from URL, default to 'online'
 const gameMode = urlParams.get('mode') || 'online';
 
@@ -47,6 +51,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Show admin logs button if admin
   checkIfAdminAndShowLogs();
+
+  // Show test button for admins
+  //showTestButtonForAdmin();
 });
 
 // Check if player is admin and show admin logs button
@@ -145,16 +152,23 @@ window.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const playerName = params.get('playerName');
     const gameCode = params.get('gameCode');
-  
+
     try {
       const res = await fetch(`/api/game/player/${gameCode}/${playerName}`);
       const data = await res.json();
-  
+
       if (res.ok) {
         // Only show the player's word — omit role
         playerRole = data.role;
         document.getElementById('playerWord').textContent = data.word;
         //document.getElementById('playerRole').textContent = `Your role: ${data.role}`;
+
+        /*// Show notification that description phase will start soon
+        showGameNotification('Get ready! Description phase will start in 10 seconds. Each player gets 1 minute to describe their word.', {
+          title: '⏰ Description Phase Starting Soon',
+          type: 'info',
+          duration: 8000
+        });*/
       } else {
         document.getElementById('playerWord').textContent = data.error || 'Could not load your word.';
         //document.getElementById('playerRole').textContent = 'Unknown role';
@@ -165,7 +179,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       //document.getElementById('playerRole').textContent = 'Unknown role';
     }
   });
-  
+
 async function startVote() {
   try {
     const res = await fetch(`/api/game/players/${gameCode}`);
@@ -244,3 +258,218 @@ function sendChat() {
 document.getElementById('chatInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') sendChat();
 });
+
+// Discussion Phase Socket Events
+socket.on('startDescriptionPhase', (data) => {
+  gamePhase = 'description';
+  currentSpeaker = data.currentSpeaker;
+
+  console.log('Description phase started:', data);
+
+  document.getElementById('discussionPhase').style.display = 'block';
+  document.getElementById('phaseTitle').textContent = 'Description Phase';
+
+  updateChatAccess();
+  updateSpeakerDisplay(data.currentSpeaker, data.speakerIndex, data.totalSpeakers);
+
+  /*showGameNotification('Description phase started! Each player gets 1 minute to describe their word.', {
+    title: '🎤 Description Phase',
+    type: 'info',
+    duration: 3000
+  });*/
+});
+
+socket.on('timerUpdate', (data) => {
+  updateTimer(data.timeLeft);
+  updateProgressBar(data.timeLeft, data.maxTime);
+
+  if (data.phase === 'description') {
+    currentSpeaker = data.currentSpeaker;
+    updateSpeakerDisplay(data.currentSpeaker, data.speakerIndex, data.totalSpeakers);
+    updateChatAccess();
+  }
+});
+
+socket.on('nextSpeaker', (data) => {
+  currentSpeaker = data.currentSpeaker;
+  updateSpeakerDisplay(data.currentSpeaker, data.speakerIndex, data.totalSpeakers);
+  updateChatAccess();
+
+  showGameNotification(`${data.currentSpeaker}'s turn to describe their word! Each player gets 1 minute to describe their word.`, {
+    type: 'info',
+    duration: 10000
+  });
+});
+
+socket.on('phaseChange', (data) => {
+  gamePhase = data.newPhase;
+
+  if (data.newPhase === 'discussion') {
+    document.getElementById('phaseTitle').textContent = 'Discussion Phase';
+    document.getElementById('currentSpeaker').innerHTML =
+      '<strong>Open Discussion:</strong> Ask questions and discuss! 💬';
+    document.getElementById('currentSpeaker').className = 'alert alert-success';
+
+    updateChatAccess();
+
+    showGameNotification('Discussion phase started! Everyone can now chat freely.', {
+      title: '💬 Discussion Phase',
+      type: 'success',
+      duration: 5000
+    });
+  } else if (data.newPhase === 'voting') {
+    document.getElementById('discussionPhase').style.display = 'none';
+    gamePhase = 'voting';
+    updateChatAccess();
+
+    showGameNotification('Time to vote! Choose who to eliminate.', {
+      title: '🗳️ Voting Phase',
+      type: 'warning',
+      duration: 3000
+    });
+
+    // Show voting buttons
+    startVote();
+  }
+});
+
+// Discussion Phase Helper Functions
+function updateTimer(secondsLeft) {
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+  const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  document.getElementById('timeRemaining').textContent = `${timeString} remaining`;
+}
+
+function updateProgressBar(timeLeft, maxTime) {
+  const percentage = (timeLeft / maxTime) * 100;
+  const progressBar = document.getElementById('timeProgress');
+  progressBar.style.width = `${percentage}%`;
+
+  // Color coding based on time remaining
+  if (percentage > 50) {
+    progressBar.className = 'progress-bar bg-success';
+  } else if (percentage > 20) {
+    progressBar.className = 'progress-bar bg-warning';
+  } else {
+    progressBar.className = 'progress-bar bg-danger';
+  }
+}
+
+function updateSpeakerDisplay(speaker, index, total) {
+  const speakerDiv = document.getElementById('currentSpeaker');
+
+  if (speaker === playerName) {
+    speakerDiv.className = 'alert alert-success';
+    speakerDiv.innerHTML = `
+      <strong>Your turn!</strong> Describe your word without saying it directly.
+      <span class="badge bg-secondary">${index + 1}/${total}</span>
+      <br><small>💡 Tip: Give clues about what your word means, how it's used, or what category it belongs to.</small>
+    `;
+  } else {
+    speakerDiv.className = 'alert alert-info';
+    speakerDiv.innerHTML = `
+      <strong>${speaker}</strong> is describing their word...
+      <span class="badge bg-secondary">${index + 1}/${total}</span>
+      <br><small>🤫 Listen carefully to their description!</small>
+    `;
+  }
+}
+
+function updateChatAccess() {
+  const chatInput = document.getElementById('chatInput');
+  const sendButton = document.querySelector('#chatCard button');
+
+  if (gamePhase === 'description') {
+    document.getElementById('startVoteBtn').style.display = 'none';
+    document.getElementById('voteList').style.display = 'none';
+    // Only current speaker can type during description phase
+    const canSpeak = (currentSpeaker === playerName);
+    chatInput.disabled = !canSpeak;
+    if (sendButton) sendButton.disabled = !canSpeak;
+
+    if (canSpeak) {
+      chatInput.placeholder = "Describe your word (avoid saying it directly)...";
+      chatInput.className = 'form-control me-2 border-success';
+    } else {
+      chatInput.placeholder = `${currentSpeaker} is describing their word...`;
+      chatInput.className = 'form-control me-2';
+    }
+  } else if (gamePhase === 'discussion') {
+    document.getElementById('timeRemaining').style.display = 'none';
+    document.getElementById('timeProgress').style.display = 'none';
+    document.getElementById('currentSpeaker').style.display = 'none';
+    document.getElementById('startVoteBtn').style.display = 'block';
+    document.getElementById('voteList').style.display = 'block';
+
+    // Everyone can chat during discussion phase
+    chatInput.disabled = false;
+    if (sendButton) sendButton.disabled = false;
+    chatInput.placeholder = "Ask questions and discuss...";
+    chatInput.className = 'form-control me-2 border-primary';
+  } else {
+    document.getElementById('startVoteBtn').style.display = 'block';
+    document.getElementById('voteList').style.display = 'block';
+    // Default state (waiting/voting)
+    chatInput.disabled = false;
+    if (sendButton) sendButton.disabled = false;
+    chatInput.placeholder = "Type a message...";
+    chatInput.className = 'form-control me-2';
+  }
+}
+
+// Test function to manually trigger description phase
+async function testDescriptionPhase() {
+  console.log('Testing description phase...');
+
+  try {
+    // Call the backend to start the description phase
+    const response = await fetch('/api/game/test-description-phase', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        gameCode: gameCode,
+        playerName: playerName
+      })
+    });
+
+    if (response.ok) {
+      showGameNotification('Test description phase started!', {
+        title: '🧪 Test Mode',
+        type: 'info',
+        duration: 5000
+      });
+    } else {
+      console.error('Failed to start test description phase');
+      showGameNotification('Failed to start test phase', {
+        type: 'error',
+        duration: 5000
+      });
+    }
+  } catch (error) {
+    console.error('Error starting test description phase:', error);
+    showGameNotification('Error starting test phase', {
+      type: 'error',
+      duration: 3000
+    });
+  }
+}
+
+// Show test button for admins
+async function showTestButtonForAdmin() {
+  if (!playerName || !gameCode) return;
+  try {
+    const res = await fetch(`/api/game/is-admin/${gameCode}/${playerName}`);
+    const data = await res.json();
+    if (data.admin) {
+      const testBtn = document.getElementById('testDescriptionBtn');
+      if (testBtn) {
+        testBtn.style.display = 'inline-block';
+      }
+    }
+  } catch (err) {
+    console.error('Admin check for test button failed:', err);
+  }
+}

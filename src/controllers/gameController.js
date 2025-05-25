@@ -18,6 +18,7 @@ exports.createGame = async (req, res) => {
     console.log('Game created and creator joined successfully', gameCode);
     res.json({ message: 'Game created successfully', gameCode });
   } catch (err) {
+    console.error('Create game error:', err);
     res.status(500).json({ error: 'Error creating game' });
   }
 };
@@ -44,6 +45,7 @@ exports.joinGame = async (req, res) => {
 
     res.json({ message: 'Joined game successfully' });
   } catch (err) {
+    console.error('Join game error:', err);
     res.status(500).json({ error: 'Failed to join game' });
   }
 };
@@ -83,6 +85,16 @@ exports.startGame = async (req, res) => {
 
     // Log this action
     await logAction(playerName, 'START_GAME', `Started game ${gameCode} with mode ${gameMode}`, gameCode);
+
+    // Get the io instance to trigger description phase
+    const io = req.app.get('io');
+
+    // Automatically start description phase 10 seconds after game starts
+    console.log(`Scheduling description phase for game ${gameCode} to start in 10 seconds`);
+    setTimeout(() => {
+      console.log(`Starting automatic description phase for game ${gameCode}`);
+      startDescribingPhase(gameCode, io);
+    }, 5000); // 10 seconds delay
 
     res.json({ message: 'Game started', gameMode: gameMode || 'online' });
   } catch (err) {
@@ -197,6 +209,12 @@ async function eliminatePlayer(gameCode, round, io) {
 
       const currentRound = await gameModel.getCurrentRound(gameCode);
 
+      // Start description phase for the new round
+      console.log(`Starting description phase for round ${currentRound} in game ${gameCode}`);
+      setTimeout(() => {
+        startDescribingPhase(gameCode, io);
+      }, 10000); // Give players 3 seconds to see elimination result
+
       // Notify players to reload the game page with new round info
       io.to(gameCode).emit('newRoundStarted', {
         round: currentRound,
@@ -270,7 +288,165 @@ exports.getGameStatus = async (req, res) => {
   }
 };
 
+// Store active description phases
+const activeDescriptionPhases = new Map();
 
+async function startDescribingPhase(gameCode, io) {
+  const players = await gameModel.getActivePlayers(gameCode);
+  if (!players || players.length === 0) return;
+
+  // Initialize description phase data
+  const phaseData = {
+    gameCode,
+    players: players.map(p => p.userId),
+    currentSpeakerIndex: 0,
+    speakerDuration: 60, // 60 seconds per player
+    timer: null
+  };
+
+  // Store the phase data
+  activeDescriptionPhases.set(gameCode, phaseData);
+
+  // Start the first player's turn
+  startPlayerTurn(gameCode, io);
+}
+
+function startPlayerTurn(gameCode, io) {
+  const phaseData = activeDescriptionPhases.get(gameCode);
+  if (!phaseData) return;
+
+  // Clear existing timer if running
+  if (phaseData.timer) {
+    clearInterval(phaseData.timer);
+  }
+
+  const currentSpeaker = phaseData.players[phaseData.currentSpeakerIndex];
+  const speakerIndex = phaseData.currentSpeakerIndex;
+  const totalSpeakers = phaseData.players.length;
+
+  console.log(`Starting turn for ${currentSpeaker} (${speakerIndex + 1}/${totalSpeakers})`);
+
+  io.to(gameCode).emit('startDescriptionPhase', {
+    currentSpeaker,
+    speakerIndex,
+    totalSpeakers,
+    duration: phaseData.speakerDuration
+  });
+
+  let timeLeft = phaseData.speakerDuration;
+
+  phaseData.timer = setInterval(() => {
+    if (timeLeft > 0) {
+      timeLeft--;
+    }
+
+    io.to(gameCode).emit('timerUpdate', {
+      timeLeft,
+      maxTime: phaseData.speakerDuration,
+      currentSpeaker,
+      speakerIndex,
+      totalSpeakers,
+      phase: 'description'
+    });
+
+  if (timeLeft <= 0) {
+      clearInterval(phaseData.timer);
+      phaseData.timer = null;
+      moveToNextPlayer(gameCode, io);
+    }
+  }, 1000);
+}
+
+function moveToNextPlayer(gameCode, io) {
+  const phaseData = activeDescriptionPhases.get(gameCode);
+  if (!phaseData) return;
+
+  phaseData.currentSpeakerIndex++;
+
+  // Check if all players have had their turn
+  if (phaseData.currentSpeakerIndex >= phaseData.players.length) {
+    // All players finished - start discussion phase
+    console.log(`All players finished describing in game ${gameCode}. Starting discussion phase.`);
+
+    // Clean up the phase data
+    activeDescriptionPhases.delete(gameCode);
+
+    // Start discussion phase
+    startDiscussionPhase(gameCode, io);
+  } else {
+    // Move to next player
+    const nextSpeaker = phaseData.players[phaseData.currentSpeakerIndex];
+    console.log(`Moving to next speaker: ${nextSpeaker}`);
+
+    // Brief pause before next player starts
+    setTimeout(() => {
+      io.to(gameCode).emit('nextSpeaker', {
+        currentSpeaker: nextSpeaker,
+        speakerIndex: phaseData.currentSpeakerIndex,
+        totalSpeakers: phaseData.players.length,
+      });
+
+      // Start the next player's turn after a short delay
+      setTimeout(() => {
+        startPlayerTurn(gameCode, io);
+      }, 2000); // 2 second transition time
+    }, 1000);
+  }
+}
+
+function startDiscussionPhase(gameCode, io) {
+  console.log(`Starting discussion phase for game ${gameCode}`);
+
+  // Notify all clients that discussion phase has started
+  io.to(gameCode).emit('phaseChange', {
+    newPhase: 'discussion',
+    duration: 300 // 5 minutes for discussion
+  });
+
+  // After 5 minutes, automatically start voting phase
+  setTimeout(() => {
+    io.to(gameCode).emit('phaseChange', {
+      newPhase: 'voting'
+    });
+  }, 300000); // 5 minutes
+}
+
+// Test endpoint to manually trigger description phase
+exports.testDescriptionPhase = async (req, res) => {
+  const { gameCode, playerName } = req.body;
+
+  if (!gameCode || !playerName) {
+    return res.status(400).json({ error: 'Game code and player name are required' });
+  }
+
+  try {
+    // Check if player is the game creator (admin)
+    const gameState = await gameModel.getGameState(gameCode);
+    if (!gameState) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+
+    const adminUserId = await gameModel.getAdminUserId(gameCode);
+    if (adminUserId !== playerName) {
+      return res.status(403).json({ error: 'Only the game creator can start test phases' });
+    }
+
+    const io = req.app.get('io');
+    console.log(`Starting test description phase for game ${gameCode} by ${playerName}`);
+
+    // Start the description phase
+    startDescribingPhase(gameCode, io);
+
+    res.json({ message: 'Test description phase started' });
+  } catch (err) {
+    console.error('Test description phase error:', err);
+    res.status(500).json({ error: 'Failed to start test description phase' });
+  }
+};
+
+// Export the description phase functions for testing
+module.exports.startDescribingPhase = startDescribingPhase;
+module.exports.startDiscussionPhase = startDiscussionPhase;
 
 
 

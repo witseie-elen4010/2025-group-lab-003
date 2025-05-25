@@ -1,6 +1,7 @@
 'use strict';
-const express = require('express');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const express = require('express');
 
 const http = require('http');
 const { Server } = require('socket.io');
@@ -143,7 +144,7 @@ io.on('connection', (socket) => {
 
   // --- End chat handler ---
   socket.on('startGame', async (gameCode) => {
-  console.log(`Game ${gameCode} started`);
+  console.log(`Game ${gameCode} started via socket`);
 
   let mode = 'online';
   try {
@@ -164,6 +165,16 @@ io.on('connection', (socket) => {
     const sockets = await io.in(gameCode).fetchSockets();
     console.log(`Found ${sockets.length} connected sockets in room ${gameCode}`);
 
+    // Import the description phase function
+    const { startDescribingPhase } = require('./controllers/gameController');
+
+    // Automatically start description phase 10 seconds after game starts
+    console.log(`Scheduling description phase for game ${gameCode} to start in 10 seconds (via socket)`);
+    setTimeout(() => {
+      console.log(`Starting automatic description phase for game ${gameCode} (via socket)`);
+      startDescribingPhase(gameCode, io);
+    }, 10000); // 10 seconds delay
+
   } catch (err) {
     console.error('Error getting players for game start notification:', err);
     // Still try to emit the event
@@ -178,5 +189,8 @@ io.on('connection', (socket) => {
 });
 
 const port = process.env.PORT || 3000;
-server.listen(port, () => console.log('Server running on port', port));
+server.listen(port, () => {
+  console.log('Server running on port', port);
+  console.log('Environment loaded:', process.env.INCOGNITO_CONNECTION_STRING ? 'DB connection string found' : 'DB connection string missing');
+});
 
