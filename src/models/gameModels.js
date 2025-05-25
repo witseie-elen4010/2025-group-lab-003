@@ -56,60 +56,135 @@ exports.startGame = async (gameCode) => {
       .query(`UPDATE GameState SET gameStarted = 1 WHERE gameCode = @gameCode`);
   };
 
-// Assign roles and words to players
-exports.assignRolesAndWords = async (gameCode) => {
-    const db = require('../config/db');
-    const pool = await db.poolPromise;
+// Assign roles to players
+exports.assignRoles = async (gameCode) => {
+  const db = require('../config/db');
+  const pool = await db.poolPromise;
 
-    // Ensure there is exactly one "undercover" and the rest are "civilian"
-    const roleOptions = ['undercover'];
-    const playerCountQuery = `
-      SELECT COUNT(*) AS playerCount FROM Players WHERE gameCode = @gameCode
-    `;
-    const result = await pool.request()
-        .input('gameCode', db.sql.VarChar, gameCode)
-        .query(playerCountQuery);
+  const playerCountQuery = `
+    SELECT COUNT(*) AS playerCount FROM Players WHERE gameCode = @gameCode
+  `;
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(playerCountQuery);
 
-    const playerCount = result.recordset[0].playerCount;
+  const playerCount = result.recordset[0].playerCount;
 
-    // Add enough "civilian" roles to the roleOptions array
-    for (let i = 1; i < playerCount; i++) {
-        roleOptions.push('civilian');
-    }
+  // Create roles: 1 undercover, rest civilians
+  const roles = ['undercover'];
+  for (let i = 1; i < playerCount; i++) {
+    roles.push('civilian');
+  }
 
-    // Shuffle the roles to distribute them randomly
-    const shuffledRoles = roleOptions.sort(() => Math.random() - 0.5);
+  // Shuffle roles randomly
+  const shuffledRoles = roles.sort(() => Math.random() - 0.5);
 
-    const wordSet = {
-        undercover: 'Apple',
-        civilian: 'Banana'
-    };
+  // Get players
+  const playersResult = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT userId FROM Players WHERE gameCode = @gameCode`);
 
-    // Get the list of players from the database
-    const playersResult = await pool.request()
-        .input('gameCode', db.sql.VarChar, gameCode)
-        .query(`SELECT userId FROM Players WHERE gameCode = @gameCode`);
+  const players = playersResult.recordset;
 
-    const players = playersResult.recordset;
-
-    // Assign roles and words to each player
-    for (let i = 0; i < players.length; i++) {
-        const role = shuffledRoles[i];
-        const word = wordSet[role];
-
-        await pool.request()
-            .input('userId', db.sql.VarChar, players[i].userId)
-            .input('gameCode', db.sql.VarChar, gameCode)
-            .input('role', db.sql.VarChar, role)
-            .input('word', db.sql.VarChar, word)
-            .query(`
-                UPDATE Players
-                SET role = @role, word = @word
-                WHERE userId = @userId AND gameCode = @gameCode
-            `);
-    }
+  // Assign roles to players
+  for (let i = 0; i < players.length; i++) {
+    await pool.request()
+      .input('userId', db.sql.VarChar, players[i].userId)
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .input('role', db.sql.VarChar, shuffledRoles[i])
+      .query(`
+        UPDATE Players SET role = @role WHERE userId = @userId AND gameCode = @gameCode
+      `);
+  }
 };
 
+// Assign words to players
+
+// Load all word pairs from DB
+exports.loadWordPairsFromDB = async () => {
+  const db = require('../config/db');  
+  const pool = await db.poolPromise;
+  const result = await pool.request()
+    .query('SELECT undercoverWord, civilianWord FROM WordPairs');
+  return result.recordset; // array of {undercoverWord, civilianWord}
+};
+
+// Get all word pairs assigned so far for a game
+async function getUsedRoundsPairs(pool, gameCode) {
+  const db = require('../config/db');  
+  const result = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT undercoverWord, civilianWord FROM RoundWords WHERE gameCode = @gameCode`);
+  return result.recordset; // array of objects
+}
+
+// Filter to get unused pairs
+function getUnusedPairs(allPairs, usedPairs) {
+  return allPairs.filter(pair => !usedPairs.some(
+    used => used.undercoverWord === pair.undercoverWord && used.civilianWord === pair.civilianWord
+  ));
+}
+
+// Pick random pair from array
+function pickRandomPair(pairs) {
+  const idx = Math.floor(Math.random() * pairs.length);
+  return pairs[idx];
+}
+
+exports.assignWordsForRound = async (gameCode, round) => {
+  const db = require('../config/db');  
+  const pool = await db.poolPromise;
+
+  // Load dictionary pairs from DB
+  const allPairs = await exports.loadWordPairsFromDB();
+
+  // Load used pairs for this game
+  const usedPairs = await getUsedRoundsPairs(pool, gameCode);
+
+  // Filter to unused pairs
+  const unusedPairs = getUnusedPairs(allPairs, usedPairs);
+
+  if (unusedPairs.length === 0) {
+    throw new Error('No unused word pairs left for this game.');
+  }
+
+  // Pick a random unused pair
+  const selectedPair = pickRandomPair(unusedPairs);
+
+  // Store selected pair for this round/game (upsert)
+  await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .input('round', db.sql.Int, round)
+    .input('undercoverWord', db.sql.VarChar, selectedPair.undercoverWord)
+    .input('civilianWord', db.sql.VarChar, selectedPair.civilianWord)
+    .query(`
+      MERGE INTO RoundWords WITH (HOLDLOCK) AS target
+      USING (VALUES (@gameCode, @round)) AS source (gameCode, round)
+      ON target.gameCode = source.gameCode AND target.round = source.round
+      WHEN MATCHED THEN
+        UPDATE SET undercoverWord = @undercoverWord, civilianWord = @civilianWord
+      WHEN NOT MATCHED THEN
+        INSERT (gameCode, round, undercoverWord, civilianWord)
+        VALUES (@gameCode, @round, @undercoverWord, @civilianWord);
+    `);
+
+  // Get active players with roles
+  const playersResult = await pool.request()
+    .input('gameCode', db.sql.VarChar, gameCode)
+    .query(`SELECT userId, role FROM Players WHERE gameCode = @gameCode AND status = 'active'`);
+
+  // Assign words to players based on role
+  for (const player of playersResult.recordset) {
+    const word = player.role === 'undercover' ? selectedPair.undercoverWord : selectedPair.civilianWord;
+    await pool.request()
+      .input('userId', db.sql.VarChar, player.userId)
+      .input('gameCode', db.sql.VarChar, gameCode)
+      .input('word', db.sql.VarChar, word)
+      .query(`
+        UPDATE Players SET word = @word WHERE userId = @userId AND gameCode = @gameCode
+      `);
+  }
+};
 
   // Get word and role for a specific player
 exports.getPlayerByNameAndGameCode = async (name, gameCode) => {
@@ -272,37 +347,6 @@ exports.incrementRound = async (gameCode) => {
   await pool.request()
     .input('gameCode', db.sql.VarChar, gameCode)
     .query(`UPDATE GameState SET round = round + 1 WHERE gameCode = @gameCode`);
-};
-
-exports.assignNewWords = async (gameCode) => {
-  const db = require('../config/db');
-  const pool = await db.poolPromise;
-
-  // Define new words for roles (can randomize later)
-  const wordSet = {
-    undercover: 'Cherry',  // example new word
-    civilian: 'Grape'
-  };
-
-  const playersResult = await pool.request()
-    .input('gameCode', db.sql.VarChar, gameCode)
-    .query(`SELECT userId, role FROM Players WHERE gameCode = @gameCode AND status = 'active'`);
-
-  const players = playersResult.recordset;
-
-  // Update word only for each player, keep roles unchanged
-  for (const player of players) {
-    const newWord = wordSet[player.role] || 'Unknown';
-    await pool.request()
-      .input('userId', db.sql.VarChar, player.userId)
-      .input('gameCode', db.sql.VarChar, gameCode)
-      .input('word', db.sql.VarChar, newWord)
-      .query(`
-        UPDATE Players
-        SET word = @word
-        WHERE userId = @userId AND gameCode = @gameCode
-      `);
-  }
 };
 
 exports.getPlayerRoleById = async (playerId) => {
